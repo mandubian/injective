@@ -19,36 +19,6 @@ object Injective {
       }
   }
 
-  /** Injection of F into G */
-  sealed trait Inject[F[_],G[_]] {
-    def inj[A](sub: F[A]): G[A]
-    def prj[A](sup: G[A]): Option[F[A]]
-  }
-
-  object Inject {
-    implicit def injRefl[F[_]] = new Inject[F,F] {
-      def inj[A](sub: F[A]) = sub
-      def prj[A](sup: F[A]) = Some(sup)
-    }
-
-    implicit def injLeft[F[_],G[_]] = new Inject[F,({type λ[α] = Coproduct[F,G,α]})#λ] {
-      def inj[A](sub: F[A]) = Coproduct(-\/(sub))
-      def prj[A](sup: Coproduct[F,G,A]) = sup.run match {
-        case -\/(fa) => Some(fa)
-        case \/-(_) => None
-      }
-    }
-
-    implicit def injRight[F[_],G[_],H[_]](implicit I: Inject[F,G]) =
-      new Inject[F,({type f[x] = Coproduct[H,G,x]})#f] {
-        def inj[A](sub: F[A]) = Coproduct(\/-(I.inj(sub)))
-        def prj[A](sup: Coproduct[H,G,A]) = sup.run match {
-          case -\/(_) => None
-          case \/-(x) => I.prj(x)
-      }
-    }
-  }
-
   def lift[F[_], G[_], A](f: F[A])(implicit I: Inject[F, G]): Free.FreeC[G, A] = {
     Free.liftFC(I.inj(f))
   }
