@@ -1,7 +1,7 @@
-shapeless-rules
+Injective
 ===============
 
-Play 2.3 generic Validation API with Shapeless
+A portage to scalaz 7.1.x API of @runorama code sample presented @scaladays 2014:
 
-To test this application, you need to use Play2.3 SNAPSHOT with new validation API as described on Julien Tournay's blog : http://jto.github.io/articles/play_new_validation_api/
-
+- Slides : https://dl.dropboxusercontent.com/u/4588997/ReasonablyPriced.pdf
+- Code Sample : https://gist.github.com/runarorama/a8fab38e473fafa0921d
