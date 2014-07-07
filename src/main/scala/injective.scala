@@ -92,7 +92,7 @@ object App {
 
   val app: Free.FreeC[App, Unit] = prg[App]
 
-  val TestAuth: Auth ~> Id = new (Auth ~> Id) {
+  object TestAuth extends (Auth ~> Id) {
     def apply[A](a: Auth[A]) = a match {
       case Login(uid, pwd) =>
         if (uid == "john.snow" && pwd == "Ghost")
