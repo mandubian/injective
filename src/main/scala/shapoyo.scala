@@ -14,7 +14,6 @@ object Shapoyo {
   implicit class RichNatT[F[_], R[_]](val f: F ~> R) extends AnyVal {
 
     def ||:[G[_]](g: G ~> R) = {
-      //type L[T] = F[T] :+: G[T] :+: CNil
 
       new ~>[({ type l[T] = G[T] :+: F[T] :+: CNil })#l, R] {
         def apply[T](c: G[T] :+: F[T] :+: CNil) = c match {
@@ -29,7 +28,6 @@ object Shapoyo {
   implicit class RichNatT2[G[_], H[_], R[_]](val g: ({ type l[T] = (G[T] :+: H[T] :+: CNil) })#l ~> R) {
 
     def ||:[F[_]](f: F ~> R) = {
-      //type L[T] = F[T] :+: G[T]
 
       new ~>[({ type l[T] = F[T] :+: G[T] :+: H[T] :+: CNil })#l, R] {
         def apply[T](c: F[T] :+: G[T] :+: H[T] :+: CNil) = c match {

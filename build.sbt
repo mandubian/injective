@@ -7,7 +7,9 @@ version := "1.0-SNAPSHOT"
 libraryDependencies ++= Seq(
   "com.chuusai"     %% "shapeless"        % "2.0.0",
   "org.scalaz"      %% "scalaz-core"      % "7.1.0-M7",
-  "org.scalatest"   %  "scalatest_2.11"   % "2.1.3"             % "test"
+  "org.scalatest"   %  "scalatest_2.11"   % "2.1.3"             % "test",
+  "org.scala-lang"  %  "scala-reflect"    % scalaVersion.value  % "provided",
+  "org.scala-lang"  %  "scala-compiler"   % scalaVersion.value  % "test"    
 )
 
 resolvers ++= Seq(
