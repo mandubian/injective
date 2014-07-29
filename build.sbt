@@ -18,4 +18,4 @@ resolvers ++= Seq(
 )
 
 
-//scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlog-implicits")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlog-implicits")

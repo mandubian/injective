@@ -16,7 +16,7 @@ import scala.concurrent._
   }
 }*/
 
-class ShapelessSpec extends FlatSpec with Matchers {
+class InjectiveSpec extends FlatSpec with Matchers {
   import shapeless._
   import poly._
   import ops.coproduct.{Inject, Selector}
