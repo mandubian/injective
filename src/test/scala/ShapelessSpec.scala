@@ -27,6 +27,9 @@ class ShapelessSpec extends FlatSpec with Matchers {
     val s = (1 :: "string" :: HNil) + (true :: HNil)
     s should equal (1 :: "string" :: true :: HNil)
 
+    val s1 = (1 :: "string" :: HNil) + HNil
+    s1 should equal (1 :: "string" :: HNil)
+
     // Nat HMonoid
     val s2 = Nat(1) + Nat(10)
     s2 should equal (Nat(11))
