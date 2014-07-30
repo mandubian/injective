@@ -1,6 +1,7 @@
 
 import shapeless._
-import ops.hlist.Prepend
+import poly.Case1
+import ops.hlist.{Prepend, Mapper}
 import ops.nat.{Sum, Pred, ToInt}
 import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
@@ -13,6 +14,40 @@ object ShapelessExt {
     implicit def caseUniv[A, B]: Case.Aux[F[A, B], R] = at[F[A, B]](apply(_))
   }
 
+
+
+  // def toHListMapper[F <: Poly, In <: HList](mapper: HMapper[HList, F, In]) = new Mapper[F, In] {
+  //   type Out = mapper.Out
+
+  //   def apply(l: In): Out = mapper(l)
+  // }
+
+  // implicit def HListHMapper[F <: Poly, In <: HList](implicit mapper: Mapper[F, In]) = new HMapper[HList, F, In] {
+  //   type Out = mapper.Out
+
+  //   def apply(l: In): Out = mapper(l)
+  // }
+
+  trait HFunctor[HA, F <: Poly] {
+    type Real
+
+    trait HMapper[H, P <: Poly, In] extends DepFn1[In] { type Out }
+
+    val hmapper: HMapper[Real, F, HA]
+
+    def map(ha: HA)(f: F): hmapper.Out
+  }
+
+  implicit def HListFunctor[HA <: HList, F <: Poly](implicit mapper: Mapper[F, HA]) = new HFunctor[HA, F] {
+    type Real = HList
+
+    val hmapper = new HMapper[HList, F, HA] {
+      type Out = mapper.Out
+
+      def apply(l: HA): Out = mapper(l)
+    }
+    def map(ha: HA)(f: F): hmapper.Out = hmapper(ha)
+  }
 
   // HSemiGroup
   trait HSemiGroup[A, B] {

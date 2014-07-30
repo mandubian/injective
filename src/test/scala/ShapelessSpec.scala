@@ -17,7 +17,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
   import nat._
   import syntax.sized._
 
-  "ShapelessExt" should "try" in {
+  "ShapelessExt" should "manage HMonoid" in {
 
     implicit class Rich[A](val a: A) {
       def +[B](b: B)(implicit hm: HMonoid[A, B]) = hm.append(a, b)
@@ -82,6 +82,18 @@ class ShapelessSpec extends FlatSpec with Matchers {
 
     val s72 = None + Some(10)
     s72 should equal (Some(10))
+  }
+
+  "ShapelessExt" should "manage HFunctor" in {
+
+    object f extends Poly1 {
+      implicit def caseInt     = at[Int](x => "foo:"+x.toString)
+      implicit def caseBoolean = at[Boolean](x => "foo:"+x.toString)
+      implicit def caseString  = at[String](x => "foo:"+x)
+    }
+
+    def map[H, HA <: H, HB <: H](ha: HA)(f: Poly)(implicit hf: HFunctor[HA, f.type]) = hf.map(ha)(f)
+    println("RES:"+map(1 :: "string" :: HNil)(f))
   }
 
 }
