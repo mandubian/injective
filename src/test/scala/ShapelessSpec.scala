@@ -9,6 +9,8 @@ import scalaz.{Free, Coyoneda}
 
 import scala.concurrent._
 import shapeless.test._
+import scala.collection.{ GenTraversable, GenTraversableLike }
+import scala.collection.generic.CanBuildFrom
 
 class ShapelessSpec extends FlatSpec with Matchers {
   import shapeless._
@@ -82,6 +84,33 @@ class ShapelessSpec extends FlatSpec with Matchers {
 
     val s72 = None + Some(10)
     s72 should equal (Some(10))
+  }
+
+  "ShapelessExt" should "manage HFunctor" in {
+
+    object f extends Poly1 {
+      implicit def caseInt     = at[Int]    (x => "foo_"+x.toString)
+      implicit def caseBoolean = at[Boolean](x => "foo_"+x.toString)
+      implicit def caseString  = at[String] (x => "foo_"+x)
+    }
+
+    object g extends Poly1 {
+      implicit def caseString  = at[String] (x => Option(x))
+    }
+
+    def map[HA](ha: HA)(f: Poly)(implicit hf: HFunctor[HA, f.type]) = hf.map(ha)(f)
+
+    map(1 :: "string" :: HNil)(f) should equal ("foo_1" :: "foo_string" :: HNil)
+    map(HNil)(f) should equal (HNil)
+
+    map(List(1, 2, 3))(f) should equal (List("foo_1", "foo_2", "foo_3"))
+    map(List("alpha", "beta", "gamma"))(f) should equal (List("foo_alpha", "foo_beta", "foo_gamma"))
+    map(List.empty[Int])(f) should equal (List())
+
+    map(map(List(1, 2, 3))(f))(g) should equal (map(List(1, 2, 3))(g compose f))
+
+    map(List(1, 2, 3).sized(3).get)(f).unsized should equal (List("foo_1", "foo_2", "foo_3"))
+    map(List.empty[Int].sized(0).get)(f).unsized should equal (List())
   }
 
 }

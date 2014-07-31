@@ -1,12 +1,13 @@
 
 import shapeless._
-import ops.hlist.Prepend
+import poly.Case1
+import ops.hlist.{Prepend, Mapper}
 import ops.nat.{Sum, Pred, ToInt}
 import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 import scala.collection.{ GenTraversable, GenTraversableLike }
 
-object ShapelessExt {
+object ShapelessExt extends HFunctors with HMonoids {
 
   trait ~~>[F[_, _], R] extends Poly1 {
     def apply[A, B](f : F[A, B]) : R
@@ -14,6 +15,83 @@ object ShapelessExt {
   }
 
 
+}
+
+trait HFunctors {
+  trait HFunctor[HA, F <: Poly] {
+    type Real
+
+    trait HMapper[P <: Poly, In] extends DepFn1[In] { type Out }
+
+    val hmapper: HMapper[F, HA]
+
+    def map(ha: HA)(f: F): hmapper.Out = hmapper(ha)
+  }
+
+  // WARNING: this one shouldn't be needed but apparently scalac requires it for HNil value...
+  implicit def HNilHFunctor[F <: Poly](implicit mapper: Mapper[F, HNil]) = new HFunctor[HNil.type, F] {
+    type Real = HList
+
+    val hmapper = new HMapper[F, HNil.type] {
+      type Out = mapper.Out
+
+      def apply(l: HNil.type): Out = mapper(l)
+    }
+
+  }
+
+  implicit def HListHFunctor[HA <: HList, F <: Poly](implicit mapper: Mapper[F, HA]) = new HFunctor[HA, F] {
+    type Real = HList
+
+    val hmapper = new HMapper[F, HA] {
+      type Out = mapper.Out
+
+      def apply(l: HA): Out = mapper(l)
+    }
+
+  }
+
+  implicit def ListHFunctor[A, F <: Poly](implicit c: Case1[F, A]) = new HFunctor[List[A], F] {
+    type Real = List[_]
+
+    val hmapper = new HMapper[F, List[A]] {
+      type Out = List[c.Result]
+
+      def apply(l: List[A]): Out = l map { a => c(a) }
+    }
+
+  }
+
+  implicit def OptionHFunctor[A, F <: Poly](implicit c: Case1[F, A]) = new HFunctor[Option[A], F] {
+    type Real = Option[_]
+
+    val hmapper = new HMapper[F, Option[A]] {
+      type Out = Option[c.Result]
+
+      def apply(l: Option[A]): Out = l map { a => c(a) }
+    }
+
+  }
+
+  implicit def SizedHFunctor[L, F <: Poly, E, N <: Nat, E1, L1](
+    implicit convL : L => GenTraversableLike[E, L],
+             c     : Case1.Aux[F, E, E1],
+             cbf   : CanBuildFrom[L, E1, L1]
+  ) = new HFunctor[Sized[L, N], F] {
+    type Real = Sized[_, Nat]
+
+    val hmapper = new HMapper[F, Sized[L, N]] {
+      type Out = Sized[L1, N]
+
+      def apply(l: Sized[L, N]): Out = Sized.wrap[L1, N](l.unsized map { e => c(e) })
+    }
+
+  }
+
+}
+
+
+trait HMonoids {
   // HSemiGroup
   trait HSemiGroup[A, B] {
     type Real
@@ -218,9 +296,9 @@ object ShapelessExt {
   implicit def SizedHSemiGroup[A, B, E, E0 >: E, AN <: Nat, BN <: Nat, CN <: Nat](
     implicit convA : A => GenTraversableLike[E, A],
              convB : B => GenTraversableLike[E0, B],
-             cbf: CanBuildFrom[A, E0, B],
-             hz:  HSemiGroup[A, B] { type Real = B },
-             sum: Sum.Aux[AN, BN, CN]
+             cbf   : CanBuildFrom[A, E0, B],
+             hz    : HSemiGroup[A, B] { type Real = B },
+             sum   : Sum.Aux[AN, BN, CN]
   ) = new HSemiGroup[Sized[A, AN], Sized[B, BN]] {
 
     type Real = Sized[B, Nat]
@@ -232,7 +310,7 @@ object ShapelessExt {
 
   implicit def SizedZeroHSemiGroup[A, B, E, E0 >: E, AN <: Nat, BN <: Nat, CN <: Nat](
     implicit convA : A => GenTraversableLike[E, A],
-             hz: HZero { type Real = Sized[A, Nat]; type Zero = Sized[B, BN] }
+             hz    : HZero { type Real = Sized[A, Nat]; type Zero = Sized[B, BN] }
   ) = new HSemiGroup[Sized[A, AN], Sized[B, BN]] {
 
     type Real = Sized[A, Nat]
@@ -240,5 +318,6 @@ object ShapelessExt {
 
     def append(a: Sized[A, AN], b: Sized[B, BN]): Out = a
   }
+
 
 }
