@@ -113,4 +113,20 @@ class ShapelessSpec extends FlatSpec with Matchers {
     map(List.empty[Int].sized(0).get)(f).unsized should equal (List())
   }
 
+  "ShapelessExt" should "manage HApply" in {
+    object f extends Poly1 {
+      implicit def caseInt     = at[Int]    (x => "foo_"+x.toString)
+      implicit def caseBoolean = at[Boolean](x => "foo_"+x.toString)
+      implicit def caseString  = at[String] (x => "foo_"+x)
+    }
+
+    object g extends Poly1 {
+      implicit def caseString  = at[String] (x => Option(x))
+      implicit def caseInt     = at[Int] (x => Option(x))
+    }
+
+    def apply[HA, HF](ha: HA)(f: HF)(implicit hap: HApply[HA, HF]) = hap.ap(ha)(f)
+
+    apply(1 :: "string" :: HNil)(f :: g :: HNil) should equal ("foo_1" :: "foo_string" :: Some(1) :: Some("string") :: HNil)
+  }
 }

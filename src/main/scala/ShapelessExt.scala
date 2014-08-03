@@ -7,13 +7,88 @@ import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 import scala.collection.{ GenTraversable, GenTraversableLike }
 
-object ShapelessExt extends HFunctors with HMonoids {
+object ShapelessExt extends HFunctors with HMonoids with HApplies {
 
   trait ~~>[F[_, _], R] extends Poly1 {
     def apply[A, B](f : F[A, B]) : R
     implicit def caseUniv[A, B]: Case.Aux[F[A, B], R] = at[F[A, B]](apply(_))
   }
 
+
+}
+
+trait HApplicatives extends HApplies {
+
+  trait HApplicative[HA, HF] extends HApply[HA, HF] {
+
+    trait Pointer[In] extends DepFn1[In] { type Out }
+    def pointer[A]: Pointer[A]
+
+    def point[A](a: A) = pointer[A](a)
+
+  }
+
+  implicit def HListHApplicative[HA <: HList, HF <: HList](implicit happly: HApply[HA, HF]) = new HApplicative[HA, HF] with HApply[HA, HF] {
+    type Real = happly.Real
+
+    def pointer[A] = new Pointer[A] {
+      type Out = A :: HNil
+      def apply(a: A): A :: HNil = a :: HNil
+    }
+
+    val happlier = happly.happlier
+  }
+}
+
+trait HApplies {
+  trait HApplier[HF, In] extends DepFn1[In] { type Out }
+
+  trait HApply[HA, HF] {
+    type Real
+
+    val happlier: HApplier[HF, HA]
+
+    def ap(ha: HA)(f: => HF): happlier.Out = happlier(ha)
+  }
+
+  object HApply {
+    type Aux[In, HF, Out0] = HApply[In, HF] { val happlier: HApplier[HF, In]{ type Out = Out0 } }
+  }
+
+  // HList Apply
+  implicit def HListHApply[HA <: HList, HT <: HList, F <: Poly, OutA <: HList, OutT <: HList, Out0 <: HList](
+    implicit mapper  : Mapper.Aux[F, HA, OutA],
+             tailAp  : HApply.Aux[HA, HT, OutT],
+             prepend : Prepend.Aux[OutA, OutT, Out0]
+  ) = new HApply[HA, F :: HT] {
+    type Real = HList
+
+    val happlier = new HApplier[F :: HT, HA] {
+      type Out = Out0
+
+      def apply(ha: HA): Out = prepend(mapper(ha), tailAp.happlier(ha))
+    }
+  }
+
+  implicit def HNilHApply[HA] = new HApply[HA, HNil] {
+    type Real = HList
+
+    val happlier = new HApplier[HNil, HA] {
+      type Out = HNil
+
+      def apply(ha: HA): Out = HNil
+    }
+  }
+
+  implicit def HNil2HApply[HA] = new HApply[HA, HNil.type] {
+    type Real = HList
+
+    val happlier = new HApplier[HNil.type, HA] {
+      type Out = HNil.type
+
+      def apply(ha: HA): Out = HNil
+    }
+  }
 
 }
 
