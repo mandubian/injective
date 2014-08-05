@@ -128,5 +128,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
     def apply[HA, HF](ha: HA)(f: HF)(implicit hap: HApply[HA, HF]) = hap.ap(ha)(f)
 
     apply(1 :: "string" :: HNil)(f :: g :: HNil) should equal ("foo_1" :: "foo_string" :: Some(1) :: Some("string") :: HNil)
+  
+    apply(List(1, 2, 3))(List(f)) should equal (List("foo_1", "foo_2", "foo_3"))
   }
 }

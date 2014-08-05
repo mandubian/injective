@@ -28,27 +28,37 @@ trait HApplicatives extends HApplies {
 
   }
 
-  implicit def HListHApplicative[HA <: HList, HF <: HList](implicit happly: HApply[HA, HF]) = new HApplicative[HA, HF] with HApply[HA, HF] {
-    type Real = happly.Real
+  // implicit def HFunctor[HA <: HList, F <: Poly, HT <: HList](implicit def happ: HApplicative[HA, F :: HF]) =
+  //   new HFunctor[HA, HF] {
+  //     type Real = happ.Real
 
-    def pointer[A] = new Pointer[A] {
-      type Out = A :: HNil
-      def apply(a: A): A :: HNil = a :: HNil
+  //     def hmapper = new HMapper[F, HA] {
+        
+  //     }
+  //   }
+
+  implicit def HListHApplicative[HA <: HList, HF <: HList](implicit happly: HApply[HA, HF]) = 
+    new HApplicative[HA, HF] with HApply[HA, HF] {
+      type Real = happly.Real
+
+      def pointer[A] = new Pointer[A] {
+        type Out = A :: HNil
+        def apply(a: A): A :: HNil = a :: HNil
+      }
+
+      val happlier = happly.happlier
     }
-
-    val happlier = happly.happlier
-  }
 }
 
 trait HApplies {
-  trait HApplier[HF, In] extends DepFn1[In] { type Out }
+  trait HApplier[HF, In] extends DepFn2[In, HF] { type Out }
 
   trait HApply[HA, HF] {
     type Real
 
     val happlier: HApplier[HF, HA]
 
-    def ap(ha: HA)(f: => HF): happlier.Out = happlier(ha)
+    def ap(ha: HA)(fs: => HF): happlier.Out = happlier(ha, fs)
   }
 
   object HApply {
@@ -66,7 +76,7 @@ trait HApplies {
     val happlier = new HApplier[F :: HT, HA] {
       type Out = Out0
 
-      def apply(ha: HA): Out = prepend(mapper(ha), tailAp.happlier(ha))
+      def apply(ha: HA, fs: F :: HT): Out = prepend(mapper(ha), tailAp.happlier(ha, fs.tail))
     }
   }
 
@@ -76,7 +86,7 @@ trait HApplies {
     val happlier = new HApplier[HNil, HA] {
       type Out = HNil
 
-      def apply(ha: HA): Out = HNil
+      def apply(ha: HA, fs: HNil): Out = HNil
     }
   }
 
@@ -86,10 +96,20 @@ trait HApplies {
     val happlier = new HApplier[HNil.type, HA] {
       type Out = HNil.type
 
-      def apply(ha: HA): Out = HNil
+      def apply(ha: HA, fs: HNil.type): Out = HNil
     }
   }
 
+  // List Apply
+  implicit def ListHApply[A, F <: Poly](implicit c: Case1[F, A]) = new HApply[List[A], List[F]] {
+    type Real = HList
+
+    val happlier = new HApplier[List[F], List[A]] {
+      type Out = List[c.Result]
+
+      def apply(l: List[A], fs: List[F]): Out = fs flatMap { f => l map { a => c(a) } }
+    }
+  }
 }
 
 trait HFunctors {
