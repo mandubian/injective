@@ -36,19 +36,15 @@ trait HApplicatives extends HApplies with HPoints with HFunctors {
 
   }
 
-  trait Rel[HA, HF, F] {
-    type Out
-  }
+  trait Rel[HA, Up]
 
   object Rel {
-    type Aux[HA, HF, F, HO] = Rel[HA, HF, F] { type Out = HO }
 
-    implicit def HListRel[HA <: HList, HT <: HList, F] = new Rel[HA, F :: HT, F] {
-      type Out = F :: HNil
-    }
+    implicit def HListRel[HA <: HList] = new Rel[HA, HList] {}
 
-    implicit def ListRel[A, F] = new Rel[List[A], List[F], F] {}
+    implicit def ListRel[A, F] = new Rel[List[A], List[_]] {}
   }
+
 }
 
 object HApplicativeImplicits extends HApplicativeImplicits
@@ -70,28 +66,33 @@ trait HApplicativeImplicits
     def ap(ha: HA)(fs: => HF) = happ.ap(ha)(fs)
   }
 
-  implicit def hfunctor[HA, HF, F <: Poly, HO](
-    implicit  happ: HApplicative[HA, HF],
-              rel: Rel.Aux[HA, HF, F, HO],
-              hpointed: HPoint.Aux[F, HO],
-              happ1: HApplicative[HA, HO]
+  implicit def hfunctor[HA, F <: Poly, UP, FO](
+    implicit  rel: Rel[HA, UP],
+              hpointed: HPoint.Aux[F, UP, FO],
+              happ: HApplicative[HA, FO]
   ) = new HFunctor[HA, F] {
-    type Out = happ1.Out
+    type Out = happ.Out
 
-    def map(ha: HA)(f: F): Out = happ1.ap(ha)(hpointed(f))
+    def map(ha: HA)(f: F): Out = happ.ap(ha)(hpointed(f))
   }
 }
 
 trait HPoints {
-  trait UPoint[T] {
-    type Out[A] <: T
+  trait UPoint[Up] {
+    type Out[A] <: Up
     def apply[A](a: A): Out[A]
   }
 
-  trait HPoint[H] extends DepFn1[H] { type Out }
+  trait HPoint[H] extends DepFn1[H] { 
+    type Up
+    type Out
+  }
 
   object HPoint {
-    type Aux[H, O] = HPoint[H] { type Out = O }
+    type Aux[H, U, O] = HPoint[H] {
+      type Up = U
+      type Out = O
+    }
   }
 
 }
@@ -100,6 +101,7 @@ object HPointImplicits extends HPointImplicits
 
 trait HPointImplicits extends HPoints {
   implicit def HListHPoint[A] = new HPoint[A] {
+    type Up = HList
     type Out = A :: HNil
     def apply(a: A) = a :: HNil
   }
@@ -110,6 +112,7 @@ trait HPointImplicits extends HPoints {
   }
 
   implicit def ListHPoint[A] = new HPoint[A] {
+    type Up = List[_]
     type Out = List[A]
     def apply(a: A) = List(a)
   }
@@ -264,6 +267,8 @@ trait HMonoids {
   }
 
 }
+
+object HMonoidImplicits extends HMonoidImplicits
 
 trait HMonoidImplicits extends HMonoids {
   // Numeric HMonoid
