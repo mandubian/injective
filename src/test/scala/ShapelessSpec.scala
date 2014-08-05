@@ -18,8 +18,9 @@ class ShapelessSpec extends FlatSpec with Matchers {
   import ShapelessExt._
   import nat._
   import syntax.sized._
-
-  "ShapelessExt" should "try" in {
+/*
+  "ShapelessExt" should "hmonoid" in {
+    import HMonoidImplicits._
 
     implicit class Rich[A](val a: A) {
       def +[B](b: B)(implicit hm: HMonoid[A, B]) = hm.append(a, b)
@@ -86,7 +87,8 @@ class ShapelessSpec extends FlatSpec with Matchers {
     s72 should equal (Some(10))
   }
 
-  "ShapelessExt" should "manage HFunctor" in {
+  it should "manage HFunctor" in {
+    import HFunctorImplicits._
 
     object f extends Poly1 {
       implicit def caseInt     = at[Int]    (x => "foo_"+x.toString)
@@ -112,8 +114,29 @@ class ShapelessSpec extends FlatSpec with Matchers {
     map(List(1, 2, 3).sized(3).get)(f).unsized should equal (List("foo_1", "foo_2", "foo_3"))
     map(List.empty[Int].sized(0).get)(f).unsized should equal (List())
   }
+*/
+  // it should "manage HApply" in {
+  //   object f extends Poly1 {
+  //     implicit def caseInt     = at[Int]    (x => "foo_"+x.toString)
+  //     implicit def caseBoolean = at[Boolean](x => "foo_"+x.toString)
+  //     implicit def caseString  = at[String] (x => "foo_"+x)
+  //   }
 
-  "ShapelessExt" should "manage HApply" in {
+  //   object g extends Poly1 {
+  //     implicit def caseString  = at[String] (x => Option(x))
+  //     implicit def caseInt     = at[Int] (x => Option(x))
+  //   }
+
+  //   def apply[HA, HF](ha: HA)(f: HF)(implicit hap: HApply[HA, HF]) = hap.ap(ha)(f)
+
+  //   apply(1 :: "string" :: HNil)(f :: g :: HNil) should equal ("foo_1" :: "foo_string" :: Some(1) :: Some("string") :: HNil)
+
+  //   apply(List(1, 2, 3))(List(f)) should equal (List("foo_1", "foo_2", "foo_3"))
+  // }
+
+  it should "manage HApplicative" in {
+    import HApplicativeImplicits._
+
     object f extends Poly1 {
       implicit def caseInt     = at[Int]    (x => "foo_"+x.toString)
       implicit def caseBoolean = at[Boolean](x => "foo_"+x.toString)
@@ -125,10 +148,24 @@ class ShapelessSpec extends FlatSpec with Matchers {
       implicit def caseInt     = at[Int] (x => Option(x))
     }
 
-    def apply[HA, HF](ha: HA)(f: HF)(implicit hap: HApply[HA, HF]) = hap.ap(ha)(f)
+    //implicitly[HApply.Up[Int::String::HNil, g.type::shapeless.HNil,HList]]
 
-    apply(1 :: "string" :: HNil)(f :: g :: HNil) should equal ("foo_1" :: "foo_string" :: Some(1) :: Some("string") :: HNil)
-  
-    apply(List(1, 2, 3))(List(f)) should equal (List("foo_1", "foo_2", "foo_3"))
+    // def apply[HA, HF](ha: HA)(f: HF)(implicit happ: HApplicative[HA, HF]) = happ.ap(ha)(f)
+
+    // apply(1 :: "string" :: HNil)(f :: g :: HNil) should equal ("foo_1" :: "foo_string" :: Some(1) :: Some("string") :: HNil)
+
+    // // not really useful as polymorphism in a List[A] isn't possible
+    // apply(List(1, 2, 3))(List(f)) should equal (List("foo_1", "foo_2", "foo_3"))
+
+    // implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]].point(5) should equal (5 :: HNil)
+
+    // implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]].point("toto") should equal ("toto" :: HNil)
+
+    implicitly[Rel.Aux[Int :: String :: HNil, f.type :: HNil, f.type, f.type :: HNil]]
+    implicitly[HPoint.Aux[f.type, f.type :: HNil]]
+    implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]]
+    hfunctor[Int :: String :: HNil, f.type :: HNil, f.type, f.type :: HNil]
+
+    //implicitly[HFunctor[Int :: String :: HNil, f.type :: HNil]]
   }
 }

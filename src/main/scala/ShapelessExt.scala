@@ -7,63 +7,141 @@ import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 import scala.collection.{ GenTraversable, GenTraversableLike }
 
-object ShapelessExt extends HFunctors with HMonoids with HApplies {
+object ShapelessExt
+  extends HFunctors
+  with HMonoids
+  with HApplicatives {
 
   trait ~~>[F[_, _], R] extends Poly1 {
     def apply[A, B](f : F[A, B]) : R
     implicit def caseUniv[A, B]: Case.Aux[F[A, B], R] = at[F[A, B]](apply(_))
   }
 
-
 }
 
-trait HApplicatives extends HApplies {
+object ShapelessExtImplicits
+  extends HFunctorImplicits
+  with HMonoidImplicits
+  with HApplicativeImplicits
+
+
+trait HApplicatives extends HApplies with HPoints with HFunctors {
 
   trait HApplicative[HA, HF] extends HApply[HA, HF] {
+    type Up
 
-    trait Pointer[In] extends DepFn1[In] { type Out }
-    def pointer[A]: Pointer[A]
+    val pointer: UPoint[Up]
 
-    def point[A](a: A) = pointer[A](a)
+    def point[A, O <: Up](a: A): pointer.Out[A] = pointer(a)
 
   }
 
-  // implicit def HFunctor[HA <: HList, F <: Poly, HT <: HList](implicit def happ: HApplicative[HA, F :: HF]) =
-  //   new HFunctor[HA, HF] {
-  //     type Real = happ.Real
+  trait Rel[HA, HF, F] {
+    type Out
+  }
 
-  //     def hmapper = new HMapper[F, HA] {
-        
-  //     }
-  //   }
+  object Rel {
+    type Aux[HA, HF, F, HO] = Rel[HA, HF, F] { type Out = HO }
 
-  implicit def HListHApplicative[HA <: HList, HF <: HList](implicit happly: HApply[HA, HF]) = 
-    new HApplicative[HA, HF] with HApply[HA, HF] {
-      type Real = happly.Real
-
-      def pointer[A] = new Pointer[A] {
-        type Out = A :: HNil
-        def apply(a: A): A :: HNil = a :: HNil
-      }
-
-      val happlier = happly.happlier
+    implicit def HListRel[HA <: HList, HT <: HList, F] = new Rel[HA, F :: HT, F] {
+      type Out = F :: HNil
     }
+
+    implicit def ListRel[A, F] = new Rel[List[A], List[F], F] {}
+  }
 }
 
+object HApplicativeImplicits extends HApplicativeImplicits
+
+trait HApplicativeImplicits
+  extends HApplicatives
+  with HApplyImplicits
+  with HPointImplicits {
+
+  implicit def happlicative[HA, HF, U](
+    implicit happ: HApply.Up[HA, HF, U],
+             p: UPoint[U]
+  ) = new HApplicative[HA, HF] {
+    type Out = happ.Out
+    type Up = happ.Up
+
+    val pointer = p
+
+    def ap(ha: HA)(fs: => HF) = happ.ap(ha)(fs)
+  }
+
+  implicit def hfunctor[HA, HF, F <: Poly, HO](
+    implicit  happ: HApplicative[HA, HF],
+              rel: Rel.Aux[HA, HF, F, HO],
+              hpointed: HPoint.Aux[F, HO],
+              happ1: HApplicative[HA, HO]
+  ) = new HFunctor[HA, F] {
+    type Out = happ1.Out
+
+    def map(ha: HA)(f: F): Out = happ1.ap(ha)(hpointed(f))
+  }
+}
+
+trait HPoints {
+  trait UPoint[T] {
+    type Out[A] <: T
+    def apply[A](a: A): Out[A]
+  }
+
+  trait HPoint[H] extends DepFn1[H] { type Out }
+
+  object HPoint {
+    type Aux[H, O] = HPoint[H] { type Out = O }
+  }
+
+}
+
+object HPointImplicits extends HPointImplicits
+
+trait HPointImplicits extends HPoints {
+  implicit def HListHPoint[A] = new HPoint[A] {
+    type Out = A :: HNil
+    def apply(a: A) = a :: HNil
+  }
+
+  implicit def HListUPoint = new UPoint[HList] {
+    type Out[A] = A :: HNil
+    def apply[A](a: A) = a :: HNil
+  }
+
+  implicit def ListHPoint[A] = new HPoint[A] {
+    type Out = List[A]
+    def apply(a: A) = List(a)
+  }
+
+  implicit def ListUPoint = new UPoint[List[_]] {
+    type Out[A] = List[A]
+    def apply[A](a: A) = List(a)
+  }
+}
+
+
+
 trait HApplies {
+
   trait HApplier[HF, In] extends DepFn2[In, HF] { type Out }
 
-  trait HApply[HA, HF] {
-    type Real
+  trait HApply[HA, HF]{
+    type Up
+    type Out
 
-    val happlier: HApplier[HF, HA]
-
-    def ap(ha: HA)(fs: => HF): happlier.Out = happlier(ha, fs)
+    def ap(ha: HA)(fs: => HF): Out
   }
 
   object HApply {
-    type Aux[In, HF, Out0] = HApply[In, HF] { val happlier: HApplier[HF, In]{ type Out = Out0 } }
+    type Aux[In, HF, Out0] = HApply[In, HF] { type Out = Out0 }
+    type Up[In, HF, Up0] = HApply[In, HF] { type Up = Up0 }
   }
+}
+
+object HApplyImplicits extends HApplyImplicits
+
+trait HApplyImplicits extends HApplies {
 
   // HList Apply
   implicit def HListHApply[HA <: HList, HT <: HList, F <: Poly, OutA <: HList, OutT <: HList, Out0 <: HList](
@@ -71,101 +149,70 @@ trait HApplies {
              tailAp  : HApply.Aux[HA, HT, OutT],
              prepend : Prepend.Aux[OutA, OutT, Out0]
   ) = new HApply[HA, F :: HT] {
-    type Real = HList
+    type Up = HList
+    type Out = Out0
 
-    val happlier = new HApplier[F :: HT, HA] {
-      type Out = Out0
-
-      def apply(ha: HA, fs: F :: HT): Out = prepend(mapper(ha), tailAp.happlier(ha, fs.tail))
-    }
+    def ap(ha: HA)(fs: => F :: HT) = prepend(mapper(ha), tailAp.ap(ha)(fs.tail))
   }
 
   implicit def HNilHApply[HA] = new HApply[HA, HNil] {
-    type Real = HList
+    type Up = HList
+    type Out = HNil
 
-    val happlier = new HApplier[HNil, HA] {
-      type Out = HNil
-
-      def apply(ha: HA, fs: HNil): Out = HNil
-    }
+    def ap(ha: HA)(fs: => HNil) = HNil
   }
 
   implicit def HNil2HApply[HA] = new HApply[HA, HNil.type] {
-    type Real = HList
+    type Up = HList
+    type Out = HNil.type
 
-    val happlier = new HApplier[HNil.type, HA] {
-      type Out = HNil.type
-
-      def apply(ha: HA, fs: HNil.type): Out = HNil
-    }
+    def ap(ha: HA)(fs: => HNil.type) = HNil
   }
 
   // List Apply
   implicit def ListHApply[A, F <: Poly](implicit c: Case1[F, A]) = new HApply[List[A], List[F]] {
-    type Real = HList
+    type Up = List[_]
+    type Out = List[c.Result]
 
-    val happlier = new HApplier[List[F], List[A]] {
-      type Out = List[c.Result]
-
-      def apply(l: List[A], fs: List[F]): Out = fs flatMap { f => l map { a => c(a) } }
-    }
+    def ap(l: List[A])(fs: => List[F]) = fs flatMap { f => l map { a => c(a) } }
   }
 }
 
 trait HFunctors {
   trait HFunctor[HA, F <: Poly] {
-    type Real
+    type Out
 
-    trait HMapper[P <: Poly, In] extends DepFn1[In] { type Out }
-
-    val hmapper: HMapper[F, HA]
-
-    def map(ha: HA)(f: F): hmapper.Out = hmapper(ha)
+    def map(ha: HA)(f: F): Out
   }
+}
+
+object HFunctorImplicits extends HFunctorImplicits
+
+trait HFunctorImplicits extends HFunctors {
 
   // WARNING: this one shouldn't be needed but apparently scalac requires it for HNil value...
   implicit def HNilHFunctor[F <: Poly](implicit mapper: Mapper[F, HNil]) = new HFunctor[HNil.type, F] {
-    type Real = HList
+    type Out = mapper.Out
 
-    val hmapper = new HMapper[F, HNil.type] {
-      type Out = mapper.Out
-
-      def apply(l: HNil.type): Out = mapper(l)
-    }
-
+    def map(l: HNil.type)(f: F) = mapper(l)
   }
 
   implicit def HListHFunctor[HA <: HList, F <: Poly](implicit mapper: Mapper[F, HA]) = new HFunctor[HA, F] {
-    type Real = HList
+    type Out = mapper.Out
 
-    val hmapper = new HMapper[F, HA] {
-      type Out = mapper.Out
-
-      def apply(l: HA): Out = mapper(l)
-    }
-
+    def map(l: HA)(f: F) = mapper(l)
   }
 
   implicit def ListHFunctor[A, F <: Poly](implicit c: Case1[F, A]) = new HFunctor[List[A], F] {
-    type Real = List[_]
+    type Out = List[c.Result]
 
-    val hmapper = new HMapper[F, List[A]] {
-      type Out = List[c.Result]
-
-      def apply(l: List[A]): Out = l map { a => c(a) }
-    }
-
+    def map(l: List[A])(f: F) = l map { a => c(a) }
   }
 
   implicit def OptionHFunctor[A, F <: Poly](implicit c: Case1[F, A]) = new HFunctor[Option[A], F] {
-    type Real = Option[_]
+    type Out = Option[c.Result]
 
-    val hmapper = new HMapper[F, Option[A]] {
-      type Out = Option[c.Result]
-
-      def apply(l: Option[A]): Out = l map { a => c(a) }
-    }
-
+    def map(l: Option[A])(f: F) = l map { a => c(a) }
   }
 
   implicit def SizedHFunctor[L, F <: Poly, E, N <: Nat, E1, L1](
@@ -173,14 +220,9 @@ trait HFunctors {
              c     : Case1.Aux[F, E, E1],
              cbf   : CanBuildFrom[L, E1, L1]
   ) = new HFunctor[Sized[L, N], F] {
-    type Real = Sized[_, Nat]
+    type Out = Sized[L1, N]
 
-    val hmapper = new HMapper[F, Sized[L, N]] {
-      type Out = Sized[L1, N]
-
-      def apply(l: Sized[L, N]): Out = Sized.wrap[L1, N](l.unsized map { e => c(e) })
-    }
-
+    def map(l: Sized[L, N])(f: F) = Sized.wrap[L1, N](l.unsized map { e => c(e) })
   }
 
 }
@@ -221,6 +263,9 @@ trait HMonoids {
     }
   }
 
+}
+
+trait HMonoidImplicits extends HMonoids {
   // Numeric HMonoid
   implicit def NumericHZero[R : Numeric] = new HZero {
     type Real = R
