@@ -2,7 +2,7 @@
 import shapeless._
 import poly.Case1
 import ops.hlist.{Prepend, Mapper, FlatMapper}
-import ops.nat.{Sum, Pred, ToInt}
+import ops.nat.{Sum, Pred, ToInt, Prod}
 import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
 import scala.collection.{ GenTraversable, GenTraversableLike }
@@ -36,6 +36,10 @@ trait HMonads extends HPoints {
 
 }
 
+object HMonadImplicits
+  extends HMonadImplicits
+  with HPointerImplicits
+
 trait HMonadImplicits extends HMonads {
 
   implicit def HListHMonad[HA <: HList, F <: Poly](
@@ -60,28 +64,75 @@ trait HMonadImplicits extends HMonads {
     def bind(l: HNil.type)(f: F) = flatMapper(l)
   }
 
-  implicit def ListHMonad[A, F <: Poly](
-    implicit c: Case1[F, List[A]],
+  implicit def ListHMonad[A, F <: Poly, B](
+    implicit c: Case1.Aux[F, A, List[B]],
              p: UPointer[List[_]]
   ) = new HMonad[List[A], F] {
     type Up = List[_]
-    type Out = List[c.Result]
+    type Out = List[B]
 
     val pointer = p
 
     def bind(l: List[A])(f: F) = l flatMap { a => c(a) }
   }
 
-  implicit def OptionHMonad[A, F <: Poly](
-    implicit c: Case1[F, Option[A]],
+  implicit def OptionHMonad[A, F <: Poly, B](
+    implicit c: Case1.Aux[F, A, Option[B]],
              p: UPointer[Option[_]]
   ) = new HMonad[Option[A], F] {
     type Up = Option[_]
-    type Out = Option[c.Result]
+    type Out = Option[B]
+
+    val pointer = p
 
     def bind(l: Option[A])(f: F) = l flatMap { a => c(a) }
   }
 
+  implicit def OptionSomeHMonad[A, F <: Poly, B](
+    implicit c: Case1.Aux[F, A, Option[B]],
+             p: UPointer[Option[_]]
+  ) = new HMonad[Some[A], F] {
+    type Up = Option[_]
+    type Out = Option[B]
+
+    val pointer = p
+
+    def bind(l: Some[A])(f: F) = l flatMap { a => c(a) }
+  }
+
+  implicit def OptionNoneHMonad[A, F <: Poly, B](
+    implicit c: Case1.Aux[F, A, Option[B]],
+             p: UPointer[Option[_]]
+  ) = new HMonad[None.type, F] {
+    type Up = Option[_]
+    type Out = None.type
+
+    val pointer = p
+
+    def bind(l: None.type)(f: F) = None
+  }
+
+
+  implicit def SizedHMonad[L, N <: Nat, F <: Poly, E, U, S1, L1, N1 <: Nat, L2, E1, L3](
+    implicit convL : L => GenTraversableLike[E, L],
+             pp    : HPointer.Aux[E, U, L],
+             c     : Case1.Aux[F, E, Sized[L1, N1]],
+             convL1: L1 => GenTraversableLike[E1, L1],
+             cbf2  : CanBuildFrom[L, E1, L1],
+             p     : UPointer[Sized[U, Nat._1]],
+             sum   : Sum[N, N1],
+             prod  : Prod[N, N1]
+  ) = new HMonad[Sized[L, N], F] {
+    type Up = Sized[U, Nat._1]
+    type Out = Sized[L1, prod.Out]
+
+    val pointer = p
+
+    def bind(l: Sized[L, N])(f: F) = {
+      val ls = l.unsized flatMap { e => c(e).asInstanceOf[Sized[L1, N1]].unsized }
+      Sized.wrap[L1, prod.Out](ls)
+    }
+  }
 }
 
 trait HApplicatives 
@@ -149,7 +200,7 @@ trait HPointers {
     def apply[A](a: A): Out[A]
   }
 
-  trait HPointer[H] extends DepFn1[H] { 
+  trait HPointer[H] extends DepFn1[H] {
     type Up
     type Out
   }
@@ -187,6 +238,23 @@ trait HPointerImplicits extends HPointers {
     type Out[A] = List[A]
     def apply[A](a: A) = List(a)
   }
+
+  implicit def OptionUPointer = new UPointer[Option[_]] {
+    type Out[A] = Option[A]
+    def apply[A](a: A) = Some(a)
+  }
+
+  implicit def SizedUPointer2[C[_]](implicit cup: UPointer[C[_]]) =
+    new UPointer[Sized[C[_], Nat._1]] {
+      type Out[A] = Sized[cup.Out[A], Nat._1]
+      def apply[A](a: A) = Sized.wrap[cup.Out[A], Nat._1](cup(a))
+    }
+
+  implicit def SizedUPointer[C](implicit cup: UPointer[C]) =
+    new UPointer[Sized[C, Nat._1]] {
+      type Out[A] = Sized[cup.Out[A], Nat._1]
+      def apply[A](a: A) = Sized.wrap[cup.Out[A], Nat._1](cup(a))
+    }
 }
 
 

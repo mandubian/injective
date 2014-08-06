@@ -147,4 +147,35 @@ class ShapelessSpec extends FlatSpec with Matchers {
     implicitly[HFunctor[List[Int], f.type]]
     implicitly[HFunctor[List[String], f.type]]
   }
+
+  it should "manage HMonad" in {
+    import HMonadImplicits._
+    import ops.hlist.{Prepend, Mapper, FlatMapper}
+
+    object f extends Poly1 {
+      implicit def caseInt     = at[Int]    (x => x :: x + 1 :: HNil)
+      implicit def caseInt2    = at[Int]    (x => List(x, x + 1))
+      implicit def caseInt3    = at[Int]    (x => List(x, x + 1).sized(2).get)
+      implicit def caseInt4    = at[Int]    (x => Some(x + 1):Option[Int])
+
+      implicit def caseBoolean = at[Boolean](x => !x :: HNil)
+      implicit def caseString  = at[String] (x => x + "tutu" :: HNil)
+      implicit def caseString2 = at[String] (x => List(x, "tutu"))
+    }
+
+    def bind[HA, HF](ha: HA)(f: HF)(implicit happ: HMonad[HA, HF]) = happ.bind(ha)(f)
+
+    bind(1 :: "string" :: true :: HNil)(f) should equal (1 :: 2 :: "stringtutu" :: false :: HNil)
+
+    bind(List(1, 5, 10))(f) should equal (List(1, 2, 5, 6, 10, 11))
+    bind(List("1", "5", "10"))(f) should equal (List("1", "tutu", "5", "tutu", "10", "tutu"))
+
+    bind(Some(5))(f) should equal (Some(6))
+    bind(None)(f) should equal (None)
+
+    val hsz = bind(List(3, 4, 5).sized(3).get)(f)
+    hsz.unsized should equal (List(3, 4, 4, 5, 5, 6))
+    typed[Sized[List[Int], _6]](hsz)
+
+  }
 }
