@@ -1,7 +1,7 @@
 
 import shapeless._
 import poly.Case1
-import ops.hlist.{Prepend, Mapper}
+import ops.hlist.{Prepend, Mapper, FlatMapper}
 import ops.nat.{Sum, Pred, ToInt}
 import syntax.sized._
 import scala.collection.generic.{ CanBuildFrom, IsTraversableLike }
@@ -25,16 +25,71 @@ object ShapelessExtImplicits
   with HApplicativeImplicits
 
 
-trait HApplicatives extends HApplies with HPoints with HFunctors {
+trait HMonads extends HPoints {
 
-  trait HApplicative[HA, HF] extends HApply[HA, HF] {
+  trait HMonad[HA, F] extends HPoint {
     type Up
+    type Out
 
-    val pointer: UPoint[Up]
-
-    def point[A, O <: Up](a: A): pointer.Out[A] = pointer(a)
-
+    def bind(fa: HA)(f: F): Out
   }
+
+}
+
+trait HMonadImplicits extends HMonads {
+
+  implicit def HListHMonad[HA <: HList, F <: Poly](
+    implicit flatMapper: FlatMapper[F, HA],
+             p: UPointer[HList]
+  ) = new HMonad[HA, F] {
+    type Up = HList
+    type Out = flatMapper.Out
+
+    val pointer = p
+    def bind(l: HA)(f: F) = flatMapper(l)
+  }
+
+  implicit def HNilHMonad[F <: Poly](
+    implicit flatMapper: FlatMapper[F, HNil],
+             p: UPointer[HList]
+  ) = new HMonad[HNil.type, F] {
+    type Up = HList
+    type Out = flatMapper.Out
+
+    val pointer = p
+    def bind(l: HNil.type)(f: F) = flatMapper(l)
+  }
+
+  implicit def ListHMonad[A, F <: Poly](
+    implicit c: Case1[F, List[A]],
+             p: UPointer[List[_]]
+  ) = new HMonad[List[A], F] {
+    type Up = List[_]
+    type Out = List[c.Result]
+
+    val pointer = p
+
+    def bind(l: List[A])(f: F) = l flatMap { a => c(a) }
+  }
+
+  implicit def OptionHMonad[A, F <: Poly](
+    implicit c: Case1[F, Option[A]],
+             p: UPointer[Option[_]]
+  ) = new HMonad[Option[A], F] {
+    type Up = Option[_]
+    type Out = Option[c.Result]
+
+    def bind(l: Option[A])(f: F) = l flatMap { a => c(a) }
+  }
+
+}
+
+trait HApplicatives 
+  extends HApplies
+  with HPoints
+  with HFunctors {
+
+  trait HApplicative[HA, HF] extends HApply[HA, HF] with HPoint
 
   trait Rel[HA, Up]
 
@@ -52,11 +107,11 @@ object HApplicativeImplicits extends HApplicativeImplicits
 trait HApplicativeImplicits
   extends HApplicatives
   with HApplyImplicits
-  with HPointImplicits {
+  with HPointerImplicits {
 
   implicit def happlicative[HA, HF, U](
     implicit happ: HApply.Up[HA, HF, U],
-             p: UPoint[U]
+             p: UPointer[U]
   ) = new HApplicative[HA, HF] {
     type Out = happ.Out
     type Up = happ.Up
@@ -68,28 +123,39 @@ trait HApplicativeImplicits
 
   implicit def hfunctor[HA, F <: Poly, UP, FO](
     implicit  rel: Rel[HA, UP],
-              hpointed: HPoint.Aux[F, UP, FO],
+              hpointer: HPointer.Aux[F, UP, FO],
               happ: HApplicative[HA, FO]
   ) = new HFunctor[HA, F] {
     type Out = happ.Out
 
-    def map(ha: HA)(f: F): Out = happ.ap(ha)(hpointed(f))
+    def map(ha: HA)(f: F): Out = happ.ap(ha)(hpointer(f))
   }
 }
 
-trait HPoints {
-  trait UPoint[Up] {
+trait HPoints extends HPointers {
+
+  trait HPoint {
+    type Up
+
+    val pointer: UPointer[Up]
+
+    def point[A, O <: Up](a: A): pointer.Out[A] = pointer(a)
+  }
+}
+
+trait HPointers {
+  trait UPointer[Up] {
     type Out[A] <: Up
     def apply[A](a: A): Out[A]
   }
 
-  trait HPoint[H] extends DepFn1[H] { 
+  trait HPointer[H] extends DepFn1[H] { 
     type Up
     type Out
   }
 
-  object HPoint {
-    type Aux[H, U, O] = HPoint[H] {
+  object HPointer {
+    type Aux[H, U, O] = HPointer[H] {
       type Up = U
       type Out = O
     }
@@ -97,27 +163,27 @@ trait HPoints {
 
 }
 
-object HPointImplicits extends HPointImplicits
+object HPointerImplicits extends HPointerImplicits
 
-trait HPointImplicits extends HPoints {
-  implicit def HListHPoint[A] = new HPoint[A] {
+trait HPointerImplicits extends HPointers {
+  implicit def HListHPointer[A] = new HPointer[A] {
     type Up = HList
     type Out = A :: HNil
     def apply(a: A) = a :: HNil
   }
 
-  implicit def HListUPoint = new UPoint[HList] {
+  implicit def HListUPointer = new UPointer[HList] {
     type Out[A] = A :: HNil
     def apply[A](a: A) = a :: HNil
   }
 
-  implicit def ListHPoint[A] = new HPoint[A] {
+  implicit def ListHPointer[A] = new HPointer[A] {
     type Up = List[_]
     type Out = List[A]
     def apply(a: A) = List(a)
   }
 
-  implicit def ListUPoint = new UPoint[List[_]] {
+  implicit def ListUPointer = new UPointer[List[_]] {
     type Out[A] = List[A]
     def apply[A](a: A) = List(a)
   }
