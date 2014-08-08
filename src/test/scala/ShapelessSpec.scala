@@ -177,5 +177,11 @@ class ShapelessSpec extends FlatSpec with Matchers {
     hsz.unsized should equal (List(3, 4, 4, 5, 5, 6))
     typed[Sized[List[Int], _6]](hsz)
 
+    // type M[A] = A :: HNil
+    // implicitly[UPointer.Aux[HList, M]]
+    // implicitly[HMonad.Pointed[Int :: String :: HNil, f.type, M]]
+    // implicitly[Head[M[f.type], f.type]]
+    // val i: HApplicative[Int :: String :: HNil, f.type :: HNil] = happlicative[Int :: String :: HNil, f.type :: HNil, f.type]
+    implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]]
   }
 }
