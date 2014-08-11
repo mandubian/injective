@@ -18,7 +18,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
   import ShapelessExt._
   import nat._
   import syntax.sized._
-/*
+
   "ShapelessExt" should "manage hmonoid" in {
     import HMonoidImplicits._
 
@@ -138,9 +138,9 @@ class ShapelessSpec extends FlatSpec with Matchers {
     // not really useful as polymorphism in a List[A] isn't possible
     apply(List(1, 2, 3))(List(f)) should equal (List("foo_1", "foo_2", "foo_3"))
 
-    implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]].point(5) should equal (5 :: HNil)
+    HApplicative.pointF[Int :: HNil, Int].apply(5) should equal (5 :: HNil)
 
-    implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]].point("toto") should equal ("toto" :: HNil)
+    HApplicative.pointF[String :: HNil, String].apply("toto") should equal ("toto" :: HNil)
 
     // Functors from Applicatives
     implicitly[HFunctor[Int :: String :: HNil, f.type]]
@@ -179,7 +179,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
 
   }
 
-*/
+
   it should "manage HMonad Laws" in {
     import HMonadImplicits._
     import ops.hlist.{Prepend, Mapper, FlatMapper}
@@ -193,23 +193,26 @@ class ShapelessSpec extends FlatSpec with Matchers {
       implicit def caseString  = at[String] (x => Option(x) :: HNil)
     }
 
+    def bind[HA, HF](ha: HA)(f: HF)(implicit hm: HMonad[HA, HF]) = hm.bind(ha)(f)
+
+    // Associativity
+    // (m >>= f) >>= g   ≡   m >>= ( \x -> (f x >>= g) )
     object h extends Poly1 {
       implicit def caseI[I, O](
         implicit c: f.Case.Aux[I, O], hm: HMonad[O, g.type]
       ) = at[I] (i => bind(f(i))(g))
     }
 
-    def bind[HA, HF](ha: HA)(f: HF)(implicit hm: HMonad[HA, HF]) = hm.bind(ha)(f)
-
     bind(bind(1 :: "toto" :: HNil)(f))(g) should equal (bind(1 :: "toto" :: HNil)(h))
 
+    // Neutral Element
     val hm = HMonad[Int :: HNil, f.type]
-    hm.bind(hm.point(1))(f) should equal (f(1))
-
     val pf = HMonad.pointF[Int :: HNil, Int]
-    //pf(5)
-    // implicitly[pf.Case[Int]]
-    // HMonad[Int :: HNil, pf.type].bind(1 :: HNil)(pf)
-    
+    // (return x) >>= f   ≡   f x
+    hm.bind(pf(1))(f) should equal (f(1))
+
+    // m >>= return   ≡   m
+    HMonad[Int :: HNil, pf.type].bind(1 :: HNil)(pf) should equal (1 :: HNil)
   }
-} 
+
+}
