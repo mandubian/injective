@@ -18,7 +18,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
   import ShapelessExt._
   import nat._
   import syntax.sized._
-
+/*
   "ShapelessExt" should "manage hmonoid" in {
     import HMonoidImplicits._
 
@@ -177,11 +177,39 @@ class ShapelessSpec extends FlatSpec with Matchers {
     hsz.unsized should equal (List(3, 4, 4, 5, 5, 6))
     typed[Sized[List[Int], _6]](hsz)
 
-    // type M[A] = A :: HNil
-    // implicitly[UPointer.Aux[HList, M]]
-    // implicitly[HMonad.Pointed[Int :: String :: HNil, f.type, M]]
-    // implicitly[Head[M[f.type], f.type]]
-    // val i: HApplicative[Int :: String :: HNil, f.type :: HNil] = happlicative[Int :: String :: HNil, f.type :: HNil, f.type]
-    implicitly[HApplicative[Int :: String :: HNil, f.type :: HNil]]
   }
-}
+
+*/
+  it should "manage HMonad Laws" in {
+    import HMonadImplicits._
+    import ops.hlist.{Prepend, Mapper, FlatMapper}
+
+    object f extends Poly1 {
+      implicit def caseInt     = at[Int]    (x => s"$x" :: s"${x + 1}" :: HNil)
+      implicit def caseString  = at[String] (x => x + "tutu" :: HNil)
+    }
+
+    object g extends Poly1 {
+      implicit def caseString  = at[String] (x => Option(x) :: HNil)
+    }
+
+    object h extends Poly1 {
+      implicit def caseI[I, O](
+        implicit c: f.Case.Aux[I, O], hm: HMonad[O, g.type]
+      ) = at[I] (i => bind(f(i))(g))
+    }
+
+    def bind[HA, HF](ha: HA)(f: HF)(implicit hm: HMonad[HA, HF]) = hm.bind(ha)(f)
+
+    bind(bind(1 :: "toto" :: HNil)(f))(g) should equal (bind(1 :: "toto" :: HNil)(h))
+
+    val hm = HMonad[Int :: HNil, f.type]
+    hm.bind(hm.point(1))(f) should equal (f(1))
+
+    val pf = HMonad.pointF[Int :: HNil, Int]
+    //pf(5)
+    // implicitly[pf.Case[Int]]
+    // HMonad[Int :: HNil, pf.type].bind(1 :: HNil)(pf)
+    
+  }
+} 
