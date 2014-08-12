@@ -1,6 +1,9 @@
 import scalaz._
 import Scalaz._
 
+import shapeless._
+import poly._
+
 object TFree {
 
   type FC[F[_], A, B] = A => Free[F, B]
@@ -26,16 +29,18 @@ object TFree {
   // }
 
   //type FMExp[F[_], A, B] = TCQueue[FC[F, A, B]]
-  type FMExp[F[_], A, B] = TFingerTree[({ type R[X, Y] = FC[F, X, Y] })#R, A, B]
+  type FMExp[F[_], A, B] = TFingerTree[({ type l[X, Y] = FC[F, X, Y] })#l, A, B]
 
   sealed trait Free[S[_], A] {
     import Free._
     import FreeView._
     import TViewl._
 
-    def toView(
+    def toView[F1 <: Poly, F2 <: Poly](
       implicit F: Functor[S],
-               TC: TSequence[TFingerTree]
+               TC: TSequence[TFingerTree],
+               c: Case2.Aux[F1, FMExp[S, Any, Any], FMExp[S, Any, A], FMExp[S, Any, A]],
+               c2: Case1.Aux[F2, FMExp[S, Any, A], TViewl[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, Any, A]]
     ): FreeView[S, A] = {
       type C[X, Y] = ({ type l[X, Y] = FC[S, X, Y] })#l[X, Y]
 
@@ -43,12 +48,14 @@ object TFree {
 
       head match {
         case Pure(x) =>
-          TC.tviewl[C, Any, A](tail) match {
-            case TEmptyL() =>
+          //TC.tviewl[C, Any, A](tail) match {
+          val a:  TViewl[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, Any, A] = c2(tail)
+          a match {
+            case a: TEmptyL[TFingerTree, C, A] =>
               Pure[S, A](x.asInstanceOf[A])
 
-            case TLeafL(hc, tc) =>
-              bind(hc(x), tc).toView
+            case l: TLeafL[TFingerTree, C, Any, Any, A] =>
+              bind(l.head(x), l.tail).toView
           }
 
         case Impure(f) =>
@@ -58,30 +65,32 @@ object TFree {
   }
 
   object Free {
+
     case class FM[S[_], X, A](head: FreeView[S, X], tail: FMExp[S, X, A]) extends Free[S, A]
 
-    def bind[S[_], A, B](f: Free[S, A], tc: FMExp[S, A, B])(
-      implicit TC: TSequence[TFingerTree]
+    def bind[S[_], A, B, F <: Poly](f: Free[S, A], tc: FMExp[S, A, B])(
+      implicit  TC: TSequence[TFingerTree],
+                c: Case2.Aux[F, FMExp[S, Any, A], FMExp[S, A, B], FMExp[S, Any, B]]
     ): Free[S, B] = {
       val FM(head, tail) = f
-      FM(head, TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, tc))
+      FM(head, c(tail, tc)) //TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, tc))
     }
 
     def fromView[S[_], A](v: FreeView[S, A])(
       implicit TC: TSequence[TFingerTree]
     ): Free[S, A] = FM(v, TC.tempty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
 
-    implicit def Monad[S[_]](
-      implicit TC: TSequence[TFingerTree]
-    ) = new Monad[({ type l[A] = Free[S, A] })#l]  {
+    // implicit def Monad[S[_]](
+    //   implicit TC: TSequence[TFingerTree]
+    // ) = new Monad[({ type l[A] = Free[S, A] })#l]  {
 
-      def bind[A, B](fm: Free[S, A])(f: A => Free[S, B]) = {
-        val FM(head, tail) = fm
-        FM(head, TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, TC.tsingleton[({ type l[X, Y] = FC[S, X, Y] })#l, A, B](f)))
-      }
+    //   def bind[A, B](fm: Free[S, A])(f: A => Free[S, B]) = {
+    //     val FM(head, tail) = fm
+    //     FM(head, TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, TC.tsingleton[({ type l[X, Y] = FC[S, X, Y] })#l, A, B](f)))
+    //   }
 
-      def point[A](a: => A) = fromView(FreeView.Pure(a))
-    }
+    //   def point[A](a: => A) = fromView(FreeView.Pure(a))
+    // }
   }
 
   sealed abstract class FreeView[S[_], A]
@@ -98,8 +107,8 @@ object TFree {
 trait TSequence[S[_[_, _], _, _]] {
   def tempty[C[_, _], X]: S[C, X, X]
   def tsingleton[C[_, _], X, Y](c: C[X, Y]): S[C, X, Y]
-  def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: S[C, Y, Z]): S[C, X, Z]
-  def tviewl[C[_, _], X, Y](s: S[C, X, Y]): TViewl[S, C, X, Y]
+  //def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: S[C, Y, Z]): S[C, X, Z]
+  //def tviewl[C[_, _], X, Y](s: S[C, X, Y]): TViewl[S, C, X, Y]
 }
 
 
