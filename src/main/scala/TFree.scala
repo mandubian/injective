@@ -82,35 +82,87 @@ object TFree {
       implicit TC: TSequence[TFingerTree]
     ): Free[S, A] = FM(v, TC.tempty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
 
-    implicit def Monad[S[_]](
-      implicit TC: TSequence[TFingerTree]
-    ) = new Monad[({ type l[A] = Free[S, A] })#l]  {
-      import TFingerTree._
+    // implicit def Monad[S[_]](
+    //   implicit TC: TSequence[TFingerTree]
+    // ) = new Monad[({ type l[A] = Free[S, A] })#l]  {
+    //   import TFingerTree._
 
-      def bind[A, B](fm: Free[S, A])(f: A => Free[S, B]) = {
-        val FM(head, tail) = fm
-        val s = TC.tsingleton[({ type l[X, Y] = FC[S, X, Y] })#l, A, B](f)
-        val a = AppendPoly(tail, s)
-        FM(
-          head, 
-          a //TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, )
-        )
-      }
+    //   def bind[A, B](fm: Free[S, A])(f: A => Free[S, B]) = {
+    //     val FM(head, tail) = fm
+    //     val s: FMExp[S, A, B] = TC.tsingleton[({ type l[X, Y] = FC[S, X, Y] })#l, A, B](f)
+    //     val t: FMExp[S, Any, A] = tail
+    //     val a = AppendPoly(t, s)
+    //     FM(
+    //       head, 
+    //       a //TC.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, Any, A, B](tail, )
+    //     )
+    //   }
 
-      def point[A](a: => A) = fromView(FreeView.Pure(a))
-    }
+    //   def point[A](a: => A) = fromView(FreeView.Pure(a))
+    // }
+
   }
 
-  sealed abstract class FreeView[S[_], A]
 
-  object FreeView {
-    case class Pure[S[_], A](a: A) extends FreeView[S, A]
-    case class Impure[S[_], A](a: S[Free[S, A]]) extends FreeView[S, A]
+  sealed trait Free2[S[_], A] {
+    type X
+    type FH <: FreeView[S, X]
+    type FT <: FMExp[S, X, A]
+
+    val head: FH
+    val tail: FT
+  }
+
+  object Free2 {
+    import TFingerTree._
+
+    type Aux[S[_], A, X0, FH0 <: FreeView[S, X0], FT0 <: FMExp[S, X0, A]] = Free2[S, A] { type X = X0 ; type FH = FH0 ; type FT = FT0}
+
+    def apply[S[_], A, X0, FH0 <: FreeView[S, X0], FT0 <: FMExp[S, X0, A]](h: FH0, t: FT0) = new Free2[S, A] {
+      type X  = X0
+      type FH = FH0
+      type FT = FT0
+
+      val head = h
+      val tail = t
+    }
+
+    //case class FM2[S[_], X, A, FH <: FreeView[S, X], FT <: FMExp[S, X, A]](head: FH, tail: FT) extends Free[S, A]
+
+    def fromView[S[_], A, FH <: FreeView[S, A]](h: FH): Free2[S, A] =
+      Free2[S, A, A, FH, Empty[({ type l[X, Y] = FC[S, X, Y] })#l, A]](h, empty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
+
+    def bind[
+      S[_], A, B, X0,
+      FH  <: Free2.Aux[S, A, X0, FH0, FT0],
+      FH0 <: FreeView[S, X0],
+      FT0 <: FMExp[S, X0, A],
+      FT  <: FMExp[S,  A, B],
+      FO  <: FMExp[S, X0, B],
+      F   <: Poly
+    ](f: FH, tc: FT)(implicit
+      c: AppendPoly.Case.Aux[FT0, FT, FO]
+    ): Free2[S, B] = {
+      Free2[S, B, X0, FH0, FO](f.head, c(f.tail, tc))
+    }
+
+    // implicit def FreeHMonad[S[_], A, FA <: Free[S, A], F <: Poly](
+    //   implicit 
+    // ) = new HMonad[FA, F] {
+    //   type Out = flatMapper.Out
+    //   def bind(l: HA)(f: F) = flatMapper(l)
+    // }
   }
 
 }
 
 
+sealed abstract class FreeView[S[_], A]
+
+object FreeView {
+  case class Pure[S[_], A](a: A) extends FreeView[S, A]
+  case class Impure[S[_], A](a: S[TFree.Free[S, A]]) extends FreeView[S, A]
+}
 
 trait TSequence[S[_[_, _], _, _]] {
   def tempty[C[_, _], X]: S[C, X, X]
@@ -131,22 +183,22 @@ object TViewl {
 
 case class Get[I, A](f: I => A)
 
-object TFreeTest {
-  import TFree._
-  import Free._
-  import FreeView._
+// object TFreeTest {
+//   import TFree._
+//   import Free2._
+//   import FreeView._
 
-  type It[I, A] = Free[({ type l[T] = Get[I, T]})#l, A]
+//   type It[I, A] = Free2[({ type l[T] = Get[I, T]})#l, A]
 
-  /*(
-    implicit M: Monad[({ type l[A] = Free[({ type l[T] = Get[I, T]})#l, A] })#l]
-  )*/
-  def get[I]: It[I, I] = fromView[({ type l[T] = Get[I, T]})#l, I](
-    Impure[({ type l[T] = Get[I, T]})#l, I](Get( (i:I) => 
-      fromView[({ type l[T] = Get[I, T]})#l, I](FreeView.Pure[({ type l[T] = Get[I, T]})#l, I](i))
-    ))
-  )
-}
+//   // (
+//   //   implicit M: Monad[({ type l[A] = Free[({ type l[T] = Get[I, T]})#l, A] })#l]
+//   // )
+//   def get[I]: It[I, I] = fromView(
+//     Impure[({ type l[T] = Get[I, T]})#l, I](Get( (i:I) => 
+//       fromView[({ type l[T] = Get[I, T]})#l, I](FreeView.Pure[({ type l[T] = Get[I, T]})#l, I](i))
+//     ))
+//   )
+// }
 
 // trait TSequence[S[_]] {
 //   def tempty[C[_, _], X]: S[C[X, X]]

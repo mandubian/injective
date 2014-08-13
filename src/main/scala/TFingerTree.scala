@@ -1,5 +1,22 @@
 import shapeless._
 
+sealed abstract class Node[R[_, _], A, B]
+
+object Node {
+  case class Node2[R[_, _], A, B, C](a1: R[A, B], a2: R[B, C]) extends Node[R, A, C]
+  case class Node3[R[_, _], A, B, C, D](a1: R[A, B], a2: R[B, C], a3: R[C, D]) extends Node[R, A, D]
+}
+
+sealed abstract class Digit[R[_, _], A, B]
+
+object Digit {
+  // TODO ADD FCT BY_VAL TO BY_NAME
+  case class One[R[_, _], A, B](a1: R[A, B]) extends Digit[R, A, B]
+  case class Two[R[_, _], A, B, C](a1: R[A, B], a2: R[B, C]) extends Digit[R, A, C]
+  case class Three[R[_, _], A, B, C, D](a1: R[A, B], a2: R[B, C], a3: R[C, D]) extends Digit[R, A, D]
+  case class Four[R[_, _], A, B, C, D, E](a1: R[A, B], a2: R[B, C], a3: R[C, D], a4: R[D, E]) extends Digit[R, A, E]
+}
+
 sealed abstract class TFingerTree[R[_, _], A, B]
 
 object TFingerTree {
@@ -155,15 +172,15 @@ object TFingerTree {
     implicit def case1[R[_, _], A, B] = at[R[A, B] :: HNil]( l => One(l(0)) )
   }
 
-  def toList[R[_, _], A, B](d: One[R, A, B]) = d.a1 :: HNil
-  def toList[R[_, _], A, B, C](d: Two[R, A, B, C]) = d.a1 :: d.a2 :: HNil
-  def toList[R[_, _], A, B, C, D](d: Three[R, A, B, C, D]) = d.a1 :: d.a2 :: d.a3 :: HNil
-  def toList[R[_, _], A, B, C, D, E](d: Four[R, A, B, C, D, E]) = d.a1 :: d.a2 :: d.a3 :: d.a4 :: HNil
+  // def toList[R[_, _], A, B](d: One[R, A, B]) = d.a1 :: HNil
+  // def toList[R[_, _], A, B, C](d: Two[R, A, B, C]) = d.a1 :: d.a2 :: HNil
+  // def toList[R[_, _], A, B, C, D](d: Three[R, A, B, C, D]) = d.a1 :: d.a2 :: d.a3 :: HNil
+  // def toList[R[_, _], A, B, C, D, E](d: Four[R, A, B, C, D, E]) = d.a1 :: d.a2 :: d.a3 :: d.a4 :: HNil
 
-  def fromList[R[_, _], A, B, C, D, E](l: R[A, B] :: R[B, C] :: R[C, D] :: R[D, E] :: HNil) = Four(l(0), l(1), l(2), l(3))
-  def fromList[R[_, _], A, B, C, D](l: R[A, B] :: R[B, C] :: R[C, D] :: HNil) = Three(l(0), l(1), l(2))
-  def fromList[R[_, _], A, B, C](l: R[A, B] :: R[B, C] :: HNil) = Two(l(0), l(1))
-  def fromList[R[_, _], A, B](l: R[A, B] :: HNil) = One(l(0))
+  // def fromList[R[_, _], A, B, C, D, E](l: R[A, B] :: R[B, C] :: R[C, D] :: R[D, E] :: HNil) = Four(l(0), l(1), l(2), l(3))
+  // def fromList[R[_, _], A, B, C, D](l: R[A, B] :: R[B, C] :: R[C, D] :: HNil) = Three(l(0), l(1), l(2))
+  // def fromList[R[_, _], A, B, C](l: R[A, B] :: R[B, C] :: HNil) = Two(l(0), l(1))
+  // def fromList[R[_, _], A, B](l: R[A, B] :: HNil) = One(l(0))
 
   object ViewToTree extends Poly3 {
 
@@ -240,20 +257,4 @@ object TFingerTree {
 }
 
 
-sealed abstract class Node[R[_, _], A, B]
-
-object Node {
-  case class Node2[R[_, _], A, B, C](a1: R[A, B], a2: R[B, C]) extends Node[R, A, C]
-  case class Node3[R[_, _], A, B, C, D](a1: R[A, B], a2: R[B, C], a3: R[C, D]) extends Node[R, A, D]
-}
-
-sealed abstract class Digit[R[_, _], A, B]
-
-object Digit {
-  // TODO ADD FCT BY_VAL TO BY_NAME
-  case class One[R[_, _], A, B](a1: R[A, B]) extends Digit[R, A, B]
-  case class Two[R[_, _], A, B, C](a1: R[A, B], a2: R[B, C]) extends Digit[R, A, C]
-  case class Three[R[_, _], A, B, C, D](a1: R[A, B], a2: R[B, C], a3: R[C, D]) extends Digit[R, A, D]
-  case class Four[R[_, _], A, B, C, D, E](a1: R[A, B], a2: R[B, C], a3: R[C, D], a4: R[D, E]) extends Digit[R, A, E]
-}
 
