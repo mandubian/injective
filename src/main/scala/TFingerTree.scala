@@ -28,11 +28,10 @@ object TFingerTree {
   case class Single[R[_, _], A, B](a: R[A, B]) extends TFingerTree[R, A, B]
 
   case class Deep[
-    R[_, _],
     PR <: Digit[R, A, B],
     MD <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     SF <: Digit[R, C, D],
-    A, B, C, D
+    R[_, _], A, B, C, D
   ](
     prefix: PR,
     middle: MD,
@@ -44,70 +43,49 @@ object TFingerTree {
   def single[R[_, _], A, B](a: => R[A, B]) = new Single[R, A, B](a)
 
   def deep[
-    R[_, _],
     PR <: Digit[R, A, B],
     MD <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     SF <: Digit[R, C, D],
-    A, B, C, D
+    R[_, _], A, B, C, D
   ](
     prefix: PR,
     middle: => MD,
     suffix: SF
-  ) = new Deep[R, PR, MD, SF, A, B, C, D](prefix, middle, suffix)
+  ) = new Deep[PR, MD, SF, R, A, B, C, D](prefix, middle, suffix)
 
 
-  object ToTree extends Poly1 {
+  object DigitToTree extends Poly1 {
     implicit def caseOne[R[_, _], A, B, C] = at[One[R, A, B]] { d => single(d.a1) }
 
     implicit def caseTwo[R[_, _], A, B, C] = at[Two[R, A, B, C]] { d =>
       deep[
-        R,
         One[R, A, B],
         Empty[({ type N[U, V] = Node[R, U, V] })#N, B],
         One[R, B, C],
-        A, B, B, C
+        R, A, B, B, C
       ](One(d.a1), empty[({ type N[U, V] = Node[R, U, V] })#N, B], One(d.a2))
     }
 
     implicit def caseThree[R[_, _], A, B, C, D] = at[Three[R, A, B, C, D]] { d =>
       deep[
-        R,
         Two[R, A, B, C],
         Empty[({ type N[U, V] = Node[R, U, V] })#N, C],
         One[R, C, D],
-        A, C, C, D
+        R, A, C, C, D
       ](Two(d.a1, d.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], One(d.a3))
     }
 
     implicit def caseFour[R[_, _], A, B, C, D, E] = at[Four[R, A, B, C, D, E]] { d =>
       deep[
-        R,
         Two[R, A, B, C],
         Empty[({ type N[U, V] = Node[R, U, V] })#N, C],
         Two[R, C, D, E],
-        A, C, C, E
+        R, A, C, C, E
       ](Two(d.a1, d.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], Two(d.a3, d.a4))
     }
   }
-  // def toTree[R[_, _], A, B](digit: One[R, A, B]): TFingerTree[R, A, B] = single(digit.a1)
 
-  // def toTree[R[_, _], A, B, C](digit: Two[R, A, B, C]): TFingerTree[R, A, C] =
-  //   deep[R, One[R, A, B], One[R, B, C], A, B, B, C](One(digit.a1), empty[({ type N[U, V] = Node[R, U, V] })#N, B], One(digit.a2))
-
-  // def toTree[R[_, _], A, B, C, D](digit: Three[R, A, B, C, D]): TFingerTree[R, A, D] =
-  //   deep[R, Two[R, A, B, C], One[R, C, D], A, C, C, D](Two(digit.a1, digit.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], One(digit.a3))
-
-  // def toTree[R[_, _], A, B, C, D, E](digit: Four[R, A, B, C, D, E]): TFingerTree[R, A, E] =
-  //   deep[R, Two[R, A, B, C], Two[R, C, D, E], A, C, C, E](Two(digit.a1, digit.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], Two(digit.a3, digit.a4))
-
-  def appendd[R[_, _], A, B, C](d1: One[R, A, B], d2: One[R, B, C]): Digit[R, A, C] = Two(d1.a1, d2.a1)
-  def appendd[R[_, _], A, B, C, D](d1: One[R, A, B], d2: Two[R, B, C, D]): Digit[R, A, D] = Three(d1.a1, d2.a1, d2.a2)
-  def appendd[R[_, _], A, B, C, D](d1: Two[R, A, B, C], d2: One[R, C, D]): Digit[R, A, D] = Three(d1.a1, d1.a2, d2.a1)
-  def appendd[R[_, _], A, B, C, D, E](d1: One[R, A, B], d2: Three[R, B, C, D, E]): Digit[R, A, E] = Four(d1.a1, d2.a1, d2.a2, d2.a3)
-  def appendd[R[_, _], A, B, C, D, E](d1: Two[R, A, B, C], d2: Two[R, C, D, E]): Digit[R, A, E] = Four(d1.a1, d1.a2, d2.a1, d2.a2)
-  def appendd[R[_, _], A, B, C, D, E](d1: Three[R, A, B, C, D], d2: One[R, D, E]): Digit[R, A, E] = Four(d1.a1, d1.a2, d1.a3, d2.a1)
-
-  object AppendPoly extends Poly2 {
+  object AppendDigitPoly extends Poly2 {
     implicit def caseOneOne[R[_, _], A, B, C] =
       at[One[R, A, B], One[R, B, C]] { (d1, d2) => Two(d1.a1, d2.a1) }
 
@@ -128,6 +106,59 @@ object TFingerTree {
 
   }
 
+  /*object PrependEltPoly extends Poly2 {
+    implicit def caseEmpty[R[_, _], A, B] = at[R[A, B], Empty[R, B]] { (e, t) => single(e) }
+
+    implicit def caseSingle[R[_, _], A, B, C] = at[R[A, B], Single[R, B, C]] { (e, t) =>
+      deep[
+        One[R, A, B],
+        Empty[({ type N[U, V] = Node[R, U, V] })#N, B],
+        One[R, B, C],
+        R, A, B, B, C
+      ](One(e), empty[({ type N[U, V] = Node[R, U, V] })#N, B], One(t.a))
+    }
+
+    implicit def caseDeepFour[
+      R[_, _], A, B, C, D, E, F, G, H,
+      PR  <: Four[R, B, C, D, E, F],
+      MD  <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, F, G],
+      SF  <: Digit[R, G, H],
+      Out <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, C, G]
+    ](implicit
+      c: PrependEltPoly.Case.Aux[Node.Node3[R, C, D, E, F], MD, Out]
+    ) = at[R[A, B], Deep[PR, MD, SF, R, B, C, F, H]] { (e, t) =>
+      deep[
+        Two[R, A, B, C],
+        Out,
+        One[R, G, H],
+        R, A, C, G, H
+      ](Two(e, t.prefix.a1),
+        c(
+          Node.Node3[R, C, D, E, F](t.prefix.a2, t.prefix.a3, t.prefix.a4),
+          t.middle
+        ),
+        t.suffix
+      )
+    }
+  }*/
+
+  object AppendTreePoly extends Poly2 {
+    implicit def caseEmpty_Tree[
+      R[_, _], A, B,
+      FT <: TFingerTree[R, A, B]
+    ] = at[Empty[R, A], FT] { (e, t) => t }
+
+    implicit def caseTree_Empty[
+      R[_, _], A, B,
+      FT <: TFingerTree[R, A, B]
+    ] = at[FT, Empty[R, B]] { (e, t) => t }
+
+    // implicit def caseSingle_Tree[
+    //   R[_, _], A, B, C
+    //   FT <: TFingerTree[R, B, C]
+    // ] = at[Single[R, A, B], FT] { (e, t) => t }
+  }
+
   object TViewlPoly extends Poly1 {
 
     implicit def caseEmpty[R[_, _], A] = at[Empty[R, A]] { e => TEmptyL[TFingerTree, R, A]() }
@@ -146,17 +177,15 @@ object TFingerTree {
     ](implicit
       c: ToListPoly.Case.Aux[PR, R[A, X] :: HT],
       fromList: FromListPoly.Case.Aux[HT, Out]
-    ) = at[Deep[R, PR, MD, SF, A, B, C, D]] { d =>
+    ) = at[Deep[PR, MD, SF, R, A, B, C, D]] { d =>
       ToListPoly(d.prefix) match {
         case h :: t => TLeafL[TFingerTree, R, A, X, D](
           h,
-          deepl[R, HT, Out, MD, SF, X, B, C, D](t, d.middle, d.suffix)
+          deepl[HT, Out, MD, SF, R, X, B, C, D](t, d.middle, d.suffix)
         )
       }
     }
   }
-
-  //def tappend[C[_, _], X, Y, Z](a: TFingerTree[C, X, Y], b: TFingerTree[C, Y, Z]): TFingerTree[C, X, Z]
 
   object ToListPoly extends Poly1 {
     implicit def caseOne[R[_, _], A, B, C] = at[One[R, A, B]] { d => d.a1 :: HNil }
@@ -172,17 +201,7 @@ object TFingerTree {
     implicit def case1[R[_, _], A, B] = at[R[A, B] :: HNil]( l => One(l(0)) )
   }
 
-  // def toList[R[_, _], A, B](d: One[R, A, B]) = d.a1 :: HNil
-  // def toList[R[_, _], A, B, C](d: Two[R, A, B, C]) = d.a1 :: d.a2 :: HNil
-  // def toList[R[_, _], A, B, C, D](d: Three[R, A, B, C, D]) = d.a1 :: d.a2 :: d.a3 :: HNil
-  // def toList[R[_, _], A, B, C, D, E](d: Four[R, A, B, C, D, E]) = d.a1 :: d.a2 :: d.a3 :: d.a4 :: HNil
-
-  // def fromList[R[_, _], A, B, C, D, E](l: R[A, B] :: R[B, C] :: R[C, D] :: R[D, E] :: HNil) = Four(l(0), l(1), l(2), l(3))
-  // def fromList[R[_, _], A, B, C, D](l: R[A, B] :: R[B, C] :: R[C, D] :: HNil) = Three(l(0), l(1), l(2))
-  // def fromList[R[_, _], A, B, C](l: R[A, B] :: R[B, C] :: HNil) = Two(l(0), l(1))
-  // def fromList[R[_, _], A, B](l: R[A, B] :: HNil) = One(l(0))
-
-  object ViewToTree extends Poly3 {
+  object ViewDigitToTree extends Poly3 {
 
     implicit def caseEmpty[
       R[_, _],
@@ -190,8 +209,8 @@ object TFingerTree {
       MD   <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
       OutSF <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, A, D],
       A, B, C, D
-    ](implicit toTree: ToTree.Case.Aux[SF, OutSF]) =
-      at[TEmptyL[TFingerTree, ({ type N[U, V] = Node[R, U, V] })#N, A], MD, SF] { (tv, m, sf) => toTree(sf) }
+    ](implicit DigittoTree: DigitToTree.Case.Aux[SF, OutSF]) =
+      at[TEmptyL[TFingerTree, ({ type N[U, V] = Node[R, U, V] })#N, A], MD, SF] { (tv, m, sf) => DigittoTree(sf) }
 
     implicit def caseLeaf[
       R[_, _],
@@ -202,7 +221,7 @@ object TFingerTree {
     ](implicit
       nodeToDigit: NodeToDigit.Case.Aux[Node[R, B, X], OutN]
     ) = at[TLeafL[TFingerTree, ({ type N[U, V] = Node[R, U, V] })#N, B, X, C], MD, SF] { (tv, m, sf) =>
-      deep[R, OutN, TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, X, C], SF, B, X, C, D](
+      deep[OutN, TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, X, C], SF, R, B, X, C, D](
         nodeToDigit(tv.head), tv.tail, sf
       )
     }
@@ -216,38 +235,36 @@ object TFingerTree {
   }
 
   def deepl[
-    R[_, _],
     HL <: HList,
     Out <: Digit[R, A, B],
     MD <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     SF <: Digit[R, C, D],
-    A, B, C, D
+    R[_, _], A, B, C, D
   ](
     prefix: HL,
     m: MD,
     suffix: SF
   )(implicit
     fromList: FromListPoly.Case.Aux[HL, Out]
-  ): TFingerTree[R, A, D] = deep[R, Out, MD, SF, A, B, C, D](fromList(prefix), m, suffix)
+  ): TFingerTree[R, A, D] = deep[Out, MD, SF, R, A, B, C, D](fromList(prefix), m, suffix)
 
   def deepl[
-    R[_, _],
     MD    <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     SF    <: Digit[R, C, D],
     Out   <: TViewl[TFingerTree, ({ type N[U, V] = Node[R, U, V] })#N, B, C],
     OutV  <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, A, D],
     OutSF <: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, A, D],
-    A, B, C, D
+    R[_, _], A, B, C, D
   ](
     prefix: HNil,
     m: MD,
     suffix: SF
   )(implicit
     tviewl: TViewlPoly.Case.Aux[MD, Out],
-    viewToTree: ViewToTree.Case.Aux[Out, MD, SF, OutV],
-    toTree: ToTree.Case.Aux[SF, OutSF]
+    viewDigitToTree: ViewDigitToTree.Case.Aux[Out, MD, SF, OutV],
+    DigittoTree: DigitToTree.Case.Aux[SF, OutSF]
   ): TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, A, D] = {
-    viewToTree(tviewl(m) :: m :: suffix :: HNil)
+    viewDigitToTree(tviewl(m) :: m :: suffix :: HNil)
   }
 
   implicit object TFingerTreeTSequence extends TSequence[TFingerTree] {
@@ -256,5 +273,32 @@ object TFingerTree {
   }
 }
 
+  // def toList[R[_, _], A, B](d: One[R, A, B]) = d.a1 :: HNil
+  // def toList[R[_, _], A, B, C](d: Two[R, A, B, C]) = d.a1 :: d.a2 :: HNil
+  // def toList[R[_, _], A, B, C, D](d: Three[R, A, B, C, D]) = d.a1 :: d.a2 :: d.a3 :: HNil
+  // def toList[R[_, _], A, B, C, D, E](d: Four[R, A, B, C, D, E]) = d.a1 :: d.a2 :: d.a3 :: d.a4 :: HNil
+
+  // def fromList[R[_, _], A, B, C, D, E](l: R[A, B] :: R[B, C] :: R[C, D] :: R[D, E] :: HNil) = Four(l(0), l(1), l(2), l(3))
+  // def fromList[R[_, _], A, B, C, D](l: R[A, B] :: R[B, C] :: R[C, D] :: HNil) = Three(l(0), l(1), l(2))
+  // def fromList[R[_, _], A, B, C](l: R[A, B] :: R[B, C] :: HNil) = Two(l(0), l(1))
+  // def fromList[R[_, _], A, B](l: R[A, B] :: HNil) = One(l(0))
+
+  // def DigittoTree[R[_, _], A, B](digit: One[R, A, B]): TFingerTree[R, A, B] = single(digit.a1)
+
+  // def DigittoTree[R[_, _], A, B, C](digit: Two[R, A, B, C]): TFingerTree[R, A, C] =
+  //   deep[R, One[R, A, B], One[R, B, C], A, B, B, C](One(digit.a1), empty[({ type N[U, V] = Node[R, U, V] })#N, B], One(digit.a2))
+
+  // def DigittoTree[R[_, _], A, B, C, D](digit: Three[R, A, B, C, D]): TFingerTree[R, A, D] =
+  //   deep[R, Two[R, A, B, C], One[R, C, D], A, C, C, D](Two(digit.a1, digit.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], One(digit.a3))
+
+  // def DigittoTree[R[_, _], A, B, C, D, E](digit: Four[R, A, B, C, D, E]): TFingerTree[R, A, E] =
+  //   deep[R, Two[R, A, B, C], Two[R, C, D, E], A, C, C, E](Two(digit.a1, digit.a2), empty[({ type N[U, V] = Node[R, U, V] })#N, C], Two(digit.a3, digit.a4))
+
+  // def appendd[R[_, _], A, B, C](d1: One[R, A, B], d2: One[R, B, C]): Digit[R, A, C] = Two(d1.a1, d2.a1)
+  // def appendd[R[_, _], A, B, C, D](d1: One[R, A, B], d2: Two[R, B, C, D]): Digit[R, A, D] = Three(d1.a1, d2.a1, d2.a2)
+  // def appendd[R[_, _], A, B, C, D](d1: Two[R, A, B, C], d2: One[R, C, D]): Digit[R, A, D] = Three(d1.a1, d1.a2, d2.a1)
+  // def appendd[R[_, _], A, B, C, D, E](d1: One[R, A, B], d2: Three[R, B, C, D, E]): Digit[R, A, E] = Four(d1.a1, d2.a1, d2.a2, d2.a3)
+  // def appendd[R[_, _], A, B, C, D, E](d1: Two[R, A, B, C], d2: Two[R, C, D, E]): Digit[R, A, E] = Four(d1.a1, d1.a2, d2.a1, d2.a2)
+  // def appendd[R[_, _], A, B, C, D, E](d1: Three[R, A, B, C, D], d2: One[R, D, E]): Digit[R, A, E] = Four(d1.a1, d1.a2, d1.a3, d2.a1)
 
 

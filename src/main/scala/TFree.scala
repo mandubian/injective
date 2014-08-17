@@ -38,7 +38,7 @@ object TFree {
     def fromView[S[_], A, FH <: FreeView[S, A]](h: FH): Free[S, A] =
       Free[S, A, A, FH, Empty[({ type l[X, Y] = FC[S, X, Y] })#l, A]](h, empty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
 
-    def bind[
+    /*def bind[
       S[_], A, B, X0,
       FH  <: Free.Aux[S, A, X0, FH0, FT0],
       FH0 <: FreeView[S, X0],
@@ -50,21 +50,21 @@ object TFree {
       c: AppendPoly.Case.Aux[FT0, FT, FO]
     ): Free[S, B] = {
       Free[S, B, X0, FH0, FO](f.head, c(f.tail, tc))
-    }
+    }*/
 
     import HMonadImplicits._
 
-    implicit def FreeHMonad[
+    /*implicit def FreeHMonad[
       S[_], A, B, X0, X1,
       FA   <: Free.Aux[S, A, X0, FH0, FT0],
       FH0  <: FreeView[S, X0],
       FT0  <: FMExp[S, X0, A],
-      F    <: Poly, 
+      F    <: Poly,
       FB   <: Free[S, B],
       FOut0<: FC[S, A, B],
       FOut <: FC[S, X0, B],  //Free.Aux[S, A, X0, FH0, FT1],
       FT1  <: FMExp[S, X0, B]
-    ](implicit 
+    ](implicit
       c  : Case1.Aux[F, A, FB],
       app: AppendPoly.Case.Aux[FT0, FOut0, FOut]
     ) = new HMonad[FA, F] {
@@ -72,9 +72,9 @@ object TFree {
       def bind(l: FA)(f: F) = {
         val ff: FC[S, A, B] = (a: A) => c(a)
         val fc: FMExp[S, A, B] = single[({ type l[X, Y] = FC[S, X, Y] })#l, A, B](ff)
-        Free(l.head, app(l.tail, fc) )
+        Free[S, B, X0, FH0, FT1](l.head, app(l.tail, fc) )
       }
-    }
+    }*/
   }
 
 }
