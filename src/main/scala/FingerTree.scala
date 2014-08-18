@@ -15,6 +15,18 @@ object FingerTree {
       implicit def caseNode2[A1, A2] = at[Node2[A1, A2]] { n => Digit.Two(n.a1, n.a2) }
       implicit def caseNode3[A1, A2, A3] = at[Node3[A1, A2, A3]] { n => Digit.Three(n.a1, n.a2, n.a3) }
     }
+
+    object FromList extends Poly1 {
+      implicit def case2[A, B] = at[A :: B :: HNil] { case a1 :: a2 :: HNil => Node2(a1, a2) :: HNil }
+
+      implicit def case3[A, B, C] = at[A :: B :: C :: HNil] { case a1 :: a2 :: a3 :: HNil => Node3(a1, a2, a3) :: HNil }
+
+      implicit def case4[A, B, C, D] = at[A :: B :: C :: D :: HNil] { case a1 :: a2 :: a3 :: a4 :: HNil => Node2(a1, a2) :: Node2(a3, a4) :: HNil }
+
+      implicit def caseOthers[A, B, C, T <: HList, Out <: HList](
+        implicit fromList: FromList.Case.Aux[T, Out]
+      ) = at[A :: B :: C :: T] { case a1 :: a2 :: a3 :: t => Node3(a1, a2, a3) :: fromList(t) }
+    }
   }
 
   sealed abstract class Digit
@@ -339,20 +351,27 @@ object FingerTree {
         append: Append.Case.Aux[Out1, A, Out2]
     ) = at[T, HL, Single[A]] { (t1, l, t2) => append(addAllR(t1, l), t2.a) }
 
-    // implicit def caseDeep[
-    //   T1  <: Deep[PR1, MD1, SF1],
-    //   T2  <: Deep[PR2, MD2, SF2],
-    //   PR1 <: Digit,      PR2 <: Digit,
-    //   MD1 <: FingerTree, MD2 <: FingerTree,
-    //   SF1 <: Digit,      SF2 <: Digit
-    // ](
-    //   implicit add: Add.Case.Aux[]
-    // ) = at[T1, T2] { (t1, t2) =>
-    //   deep(
-    //     t1.prefix,
-
-    //     t2.suffix
-    //   )
-    // }
+    implicit def caseDeep[
+      T1  <: Deep[PR1, MD1, SF1],
+      T2  <: Deep[PR2, MD2, SF2],
+      PR1 <: Digit,      PR2 <: Digit,
+      MD1 <: FingerTree, MD2 <: FingerTree,
+      SF1 <: Digit,      SF2 <: Digit,
+      HL  <: HList, HSF1 <: HList, HPR2 <: HList, HOut1 <: HList, HOut2 <: HList, HOut3 <: HList,
+      T3 <: FingerTree
+    ](implicit
+      toList1: Digit.ToList.Case.Aux[SF1, HSF1],
+      toList2: Digit.ToList.Case.Aux[PR2, HPR2],
+      hlistPrepend: shapeless.ops.hlist.Prepend.Aux[HSF1, HL, HOut1],
+      hlistPrepend2: shapeless.ops.hlist.Prepend.Aux[HOut1, HPR2, HOut2],
+      fromListNodes: Node.FromList.Case.Aux[HOut2, HOut3],
+      add: Add.Case.Aux[MD1, HOut3, MD2, T3]
+    ) = at[T1, HL, T2] { (t1, l, t2) =>
+      deep(
+        t1.prefix,
+        add(t1.middle :: (fromListNodes(toList1(t1.suffix) ++ l ++ toList2(t2.prefix))) :: t2.middle :: HNil),
+        t2.suffix
+      )
+    }
   }
 }
