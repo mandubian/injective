@@ -93,9 +93,9 @@ object FingerTree {
     suffix: SF
   ) extends FingerTree
 
-  def empty() = Empty
+  def empty(): Empty.type = Empty
 
-  def single[A](a: => A) = new Single[A](a)
+  def single[A](a: => A): Single[A] = new Single[A](a)
 
   def deep[
     PR <: Digit,
@@ -105,13 +105,13 @@ object FingerTree {
     prefix: PR,
     middle: => MD,
     suffix: SF
-  ) = new Deep[PR, MD, SF](prefix, middle, suffix)
+  ): Deep[PR, MD, SF] = new Deep[PR, MD, SF](prefix, middle, suffix)
 
 
   object DigitToTree extends Poly1 {
-    implicit def caseOne[A] = at[One[A]] { d => single(d.a1) }
+    implicit def caseOne[A]: Case.Aux[One[A], Single[A]] = at[One[A]] { d => single(d.a1) }
 
-    implicit def caseTwo[A1, A2] = at[Two[A1, A2]] { d =>
+    implicit def caseTwo[A1, A2]: Case.Aux[Two[A1, A2], Deep[One[A1], Empty.type, One[A2]]] = at[Two[A1, A2]] { d =>
       deep[
         One[A1],
         Empty.type,
@@ -119,7 +119,7 @@ object FingerTree {
       ](One(d.a1), Empty, One(d.a2))
     }
 
-    implicit def caseThree[A1, A2, A3] = at[Three[A1, A2, A3]] { d =>
+    implicit def caseThree[A1, A2, A3]: Case.Aux[Three[A1, A2, A3], Deep[Two[A1, A2], Empty.type, One[A3]]] = at[Three[A1, A2, A3]] { d =>
       deep[
         Two[A1, A2],
         Empty.type,
@@ -127,7 +127,7 @@ object FingerTree {
       ](Two(d.a1, d.a2), Empty, One(d.a3))
     }
 
-    implicit def caseFour[A1, A2, A3, A4] = at[Four[A1, A2, A3, A4]] { d =>
+    implicit def caseFour[A1, A2, A3, A4]: Case.Aux[Four[A1, A2, A3, A4], Deep[Two[A1, A2], Empty.type, Two[A3, A4]]] = at[Four[A1, A2, A3, A4]] { d =>
       deep[
         Two[A1, A2],
         Empty.type,
@@ -150,11 +150,9 @@ object FingerTree {
       Out <: Digit
     ](implicit
       fromList: Digit.FromList.Case.Aux[HL, Out]
-    ) = at[
-      HL,
-      MD,
-      SF
-    ] { (prefix, m, suffix) => deep[Out, MD, SF](fromList(prefix), m, suffix) }
+    ): Case.Aux[HL, MD, SF, Deep[Out, MD, SF]] = at[HL, MD, SF] { (prefix, m, suffix) =>
+      deep[Out, MD, SF](fromList(prefix), m, suffix)
+    }
 
 
     implicit def caseHNilEmpty[
@@ -162,11 +160,7 @@ object FingerTree {
       Out <: FingerTree
     ](implicit
       digitToTree: DigitToTree.Case.Aux[SF, Out]
-    ) = at[
-      HNil,
-      Empty.type,
-      SF
-    ] { (prefix, m, suffix) =>
+    ): Case.Aux[HNil, Empty.type, SF, Out] = at[HNil, Empty.type, SF] { (prefix, m, suffix) =>
       digitToTree(suffix)
     }
 
@@ -177,11 +171,7 @@ object FingerTree {
       A
     ](implicit
       digitToTree: DigitToTree.Case.Aux[SF, Out]
-    ) = at[
-      HNil,
-      Single[A],
-      SF
-    ] { (prefix, m, suffix) =>
+    ): Case.Aux[HNil, Single[A], SF, Deep[One[A], Empty.type, SF]] = at[HNil, Single[A], SF] { (prefix, m, suffix) =>
       deep(One(m.a), Empty, suffix)
     }
 
@@ -198,11 +188,7 @@ object FingerTree {
       toList: Digit.ToList.Case.Aux[PR, H :: T],
       deepl: DeepL.Case.Aux[T, MD, SF, MD2],
       nodeToDigit: Node.ToDigit.Case.Aux[H, HD]
-    ) = at[
-      HNil,
-      Deep[PR, MD, SF],
-      SF2
-    ] { (prefix, m, suffix) =>
+    ): Case.Aux[HNil, Deep[PR, MD, SF], SF2, Deep[HD, MD2, SF2]] = at[HNil, Deep[PR, MD, SF], SF2] { (prefix, m, suffix) =>
       val l = toList(m.prefix)
       val m2 = deepl(l.tail :: m.middle :: m.suffix :: HNil)
       deep(nodeToDigit(l.head), m2, suffix)
@@ -212,22 +198,22 @@ object FingerTree {
   def prepend[A, T <: FingerTree, Out <: FingerTree](a: A, tree: T)(implicit p: Prepend.Case.Aux[A, T, Out]): Out = p(a, tree)
 
   object Prepend extends Poly2 {
-    implicit def caseEmpty[A] = at[A, Empty.type] { (a, t) => single(a) }
+    implicit def caseEmpty[A]: Case.Aux[A, Empty.type, Single[A]] = at[A, Empty.type] { (a, t) => single(a) }
 
-    implicit def caseSingle[A, B] = at[A, Single[B]] { (e, t) =>
+    implicit def caseSingle[A, B]: Case.Aux[A, Single[B], Deep[One[A], Empty.type, One[B]]] = at[A, Single[B]] { (e, t) =>
       deep(One(e), Empty, One(t.a))
     }
 
     implicit def caseFour[
-      A, B, C, D,
+      A, B, C, D, E,
       MD  <: FingerTree,
       SF  <: Digit,
       Out <: FingerTree
     ](implicit
-      prepend: Prepend.Case.Aux[Node3[B, C, D], MD, Out]
-    ) = at[
+      prepend: Prepend.Case.Aux[Node3[C, D, E], MD, Out]
+    ): Case.Aux[A, Deep[Four[B, C, D, E], MD, SF], Deep[Two[A, B], Out, SF]] = at[
       A,
-      Deep[Four[A, B, C, D], MD, SF]
+      Deep[Four[B, C, D, E], MD, SF]
     ] { (a, t) =>
       deep(
         Two(a, t.prefix.a1),
@@ -244,10 +230,7 @@ object FingerTree {
       Out <: Digit
     ](implicit
       append: Digit.Append.Case.Aux[One[A], PR, Out]
-    ) = at[
-      A,
-      Deep[PR, MD, SF]
-    ] { (a, t) =>
+    ): Case.Aux[A, Deep[PR, MD, SF], Deep[Out, MD, SF]] = at[A, Deep[PR, MD, SF]] { (a, t) =>
       deep(
         append(One(a), t.prefix),
         t.middle,
@@ -265,22 +248,20 @@ object FingerTree {
     }
 
     implicit def caseFour[
-      A, B, C, D,
+      A, B, C, D, E,
       MD  <: FingerTree,
       PR  <: Digit,
       Out <: FingerTree
     ](implicit
       append: Append.Case.Aux[MD, Node3[A, B, C], Out]
-    ) = at[
-      Deep[PR, MD, Four[A, B, C, D]],
-      A
-    ] { (t, a) =>
-      deep(
-        t.prefix,
-        append(t.middle, Node3(t.suffix.a1, t.suffix.a2, t.suffix.a3)),
-        Two(t.suffix.a4, a)
-      )
-    }
+    ): Case.Aux[Deep[PR, MD, Four[A, B, C, D]], E, Deep[PR, Out, Two[D, E]]] =
+      at[Deep[PR, MD, Four[A, B, C, D]], E] { (t, e) =>
+        deep(
+          t.prefix,
+          append(t.middle, Node3(t.suffix.a1, t.suffix.a2, t.suffix.a3)),
+          Two(t.suffix.a4, e)
+        )
+      }
 
     implicit def caseLast[
       A,
@@ -290,10 +271,7 @@ object FingerTree {
       Out <: Digit
     ](implicit
       append: Digit.Append.Case.Aux[SF, One[A], Out]
-    ) = at[
-      Deep[PR, MD, SF],
-      A
-    ] { (t, a) =>
+    ): Case.Aux[Deep[PR, MD, SF], A, Deep[PR, MD, Out]] = at[Deep[PR, MD, SF], A] { (t, a) =>
       deep(
         t.prefix,
         t.middle,
@@ -302,53 +280,68 @@ object FingerTree {
     }
   }
 
+  def addAllL[HL <: HList, T <: FingerTree](l: HL, tree: T)(
+    implicit addAllL: AddAllL.Case[HL, T]
+  ): addAllL.Result = addAllL(l, tree)
+
   object AddAllL extends Poly2 {
-    implicit def caseHNil[T <: FingerTree] = at[HNil, T] { (l, t) => t }
+    implicit def caseHNil[T <: FingerTree]: Case.Aux[HNil, T, T] = at[HNil, T] { (l, t) => t }
+    //implicit def caseHNilType[T <: FingerTree]: Case.Aux[HNil.type, T, T] = at[HNil.type, T] { (l, t) => t }
 
     implicit def caseHList[
       HH, HT <: HList, T <: FingerTree, Out1 <: FingerTree, Out2 <: FingerTree
     ](implicit
-      addAllL: AddAllL.Case.Aux[HT, T, Out1],
+      addAllL: Case.Aux[HT, T, Out1],
       prepend: Prepend.Case.Aux[HH, Out1, Out2]
-    ) = at[HH :: HT, T] { (l, t) =>
-      prepend(l.head, addAllL(l.tail, t))
-    }
+    ): Case.Aux[HH :: HT, T, Out2] =
+      at[HH :: HT, T] { (l, t) =>
+        prepend(l.head, addAllL(l.tail, t))
+      }
   }
 
+  def addAllR[T <: FingerTree, HL <: HList](tree: T, l: HL)(
+    implicit addAllR: AddAllR.Case[T, HL]
+  ): addAllR.Result = addAllR(tree, l)
+
   object AddAllR extends Poly2 {
-    implicit def caseHNil[T <: FingerTree] = at[T, HNil] { (t, l) => t }
+    implicit def caseHNil[T <: FingerTree]: Case.Aux[T, HNil, T] = at[T, HNil] { (t, l) => t }
 
     implicit def caseHList[
       HH, HT <: HList, T <: FingerTree, Out1 <: FingerTree, Out2 <: FingerTree
     ](implicit
       append: Append.Case.Aux[T, HH, Out1],
       addAllR: AddAllR.Case.Aux[Out1, HT, Out2]
-    ) = at[T, HH :: HT] { (t, l) =>
-      addAllR(append(t, l.head), l.tail)
-    }
+    ): Case.Aux[T, HH :: HT, Out2] =
+      at[T, HH :: HT] { (t, l) =>
+        addAllR(append(t, l.head), l.tail)
+      }
   }
+
+  def add[T1 <: FingerTree, HL <: HList, T2 <: FingerTree](t1: T1, l: HL, t2: T2)(
+    implicit add: Add.Case[T1, HL, T2]
+  ): add.Result = add(t1 :: l :: t2 :: HNil)
 
   object Add extends Poly3 {
     implicit def caseHNil1[HL <: HList, T <: FingerTree, Out <: FingerTree](
-      implicit addAllL: AddAllL.Case.Aux[HL, T, Out]
+      implicit addAllL: AddAllL.Case[HL, T]
     ) = at[Empty.type, HL, T] { (t1, l, t2) => addAllL(l, t2) }
 
     implicit def caseHNil2[T <: FingerTree, HL <: HList, Out <: FingerTree](
-      implicit addAllR: AddAllR.Case.Aux[T, HL, Out]
+      implicit addAllR: AddAllR.Case[T, HL]
     ) = at[T, HL, Empty.type] { (t1, l, t2) => addAllR(t1, l) }
 
     implicit def caseSingle1[
       A, T <: FingerTree, HL <: HList, Out1 <: FingerTree, Out2 <: FingerTree
     ](implicit
         addAllL: AddAllL.Case.Aux[HL, T, Out1],
-        prepend: Prepend.Case.Aux[A, Out1, Out2]
+        prepend: Prepend.Case[A, Out1]
     ) = at[Single[A], HL, T] { (t1, l, t2) => prepend(t1.a, addAllL(l, t2)) }
 
     implicit def caseSingle2[
       A, T <: FingerTree, HL <: HList, Out1 <: FingerTree, Out2 <: FingerTree
     ](implicit
         addAllR: AddAllR.Case.Aux[T, HL, Out1],
-        append: Append.Case.Aux[Out1, A, Out2]
+        append: Append.Case[Out1, A]
     ) = at[T, HL, Single[A]] { (t1, l, t2) => append(addAllR(t1, l), t2.a) }
 
     implicit def caseDeep[

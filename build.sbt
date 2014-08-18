@@ -9,7 +9,8 @@ libraryDependencies ++= Seq(
   "org.scalaz"      %% "scalaz-core"      % "7.1.0-M7",
   "org.scalatest"   %  "scalatest_2.11"   % "2.1.3"             % "test",
   "org.scala-lang"  %  "scala-reflect"    % scalaVersion.value  % "provided",
-  "org.scala-lang"  %  "scala-compiler"   % scalaVersion.value  % "test"    
+  "org.scala-lang"  %  "scala-compiler"   % scalaVersion.value  % "test",
+  "nl.grons"        %% "metrics-scala"    % "3.2.1_a2.3"
 )
 
 resolvers ++= Seq(
@@ -18,4 +19,4 @@ resolvers ++= Seq(
 )
 
 
-//scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlog-implicits")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlog-implicits")
