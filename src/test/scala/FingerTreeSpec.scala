@@ -95,9 +95,61 @@ class FingerTreeSpec extends FlatSpec with Matchers with Instrumented {
       addAllL(1 :: "tutu" :: true :: HNil, t)
     }
     t1 should equal (Deep(Digit.Two(1, "tutu"), FingerTree.empty(), Digit.One(true)))
-    val t2 = testTime("addAllL1") {
+    val t2 = testTime("addAllL2") {
       addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t1)
     }
-    println(t2)
+    println("T2:"+t2)
+    // val t3 = testTime("addAllL3") {
+    //   addAllL(1 :: 2 :: 3 :: 4 :: HNil, t2)
+    // }
+
+    implicitly[ 
+      FingerTree.Prepend.Case[
+        Int,
+        FingerTree.Deep[
+          FingerTree.Digit.Two[Int,Int],
+          FingerTree.Deep[
+            FingerTree.Digit.One[FingerTree.Node.Node3[Int,Boolean,String]],
+            FingerTree.Empty.type,
+            FingerTree.Digit.One[FingerTree.Node.Node3[Double,Int,String]]
+          ],
+          FingerTree.Digit.One[Boolean]
+        ]
+      ]
+    ]
+
+    // val t4 = testTime("addAllL4") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t3)
+    // }
+    // val t5 = testTime("addAllL5") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t4)
+    // }
+    // val t6 = testTime("addAllL6") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t5)
+    // }
+    // val t7 = testTime("addAllL7") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t6)
+    // }
+    // val t8 = testTime("addAllL8") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t7)
+    // }
+    // val t9 = testTime("addAllL9") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t8)
+    // }
+    // val t10 = testTime("addAllL10") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t9)
+    // }
+    // val t11 = testTime("addAllL11") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t10)
+    // }
+    // val t12 = testTime("addAllL12") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t11)
+    // }
+    // val t13 = testTime("addAllL13") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t12)
+    // }
+    // val t14 = testTime("addAllL14") {
+    //   addAllL(2 :: false :: "tata" :: 1.234 :: HNil, t13)
+    // }
   }
 }

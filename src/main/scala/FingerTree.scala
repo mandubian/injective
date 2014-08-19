@@ -55,23 +55,23 @@ object FingerTree {
 
     object Append extends Poly2 {
 
-      implicit def caseOneOne[A1, A2] =
+      implicit def caseOneOne[A1, A2]: Case.Aux[One[A1], One[A2], Two[A1, A2]] =
         at[One[A1], One[A2]] { (d1, d2) => Two(d1.a1, d2.a1) }
 
-      implicit def caseOneTwo[A1, A2, A3] =
+      implicit def caseOneTwo[A1, A2, A3]: Case.Aux[One[A1], Two[A2, A3], Three[A1, A2, A3]] =
         at[One[A1], Two[A2, A3]] { (d1, d2) => Three(d1.a1, d2.a1, d2.a2) }
 
-      implicit def caseTwoOne[A1, A2, A3] =
+      implicit def caseTwoOne[A1, A2, A3]: Case.Aux[Two[A1, A2], One[A3], Three[A1, A2, A3]] =
         at[Two[A1, A2], One[A3]] { (d1, d2) => Three(d1.a1, d1.a2, d2.a1) }
 
-      implicit def caseOneThree[A1, A2, A3, A4] =
+      implicit def caseOneThree[A1, A2, A3, A4]: Case.Aux[One[A1], Three[A2, A3, A4], Four[A1, A2, A3, A4]] =
         at[One[A1], Three[A2, A3, A4]] { (d1, d2) => Four(d1.a1, d2.a1, d2.a2, d2.a3) }
 
-      implicit def caseTwoTwo[A1, A2, A3, A4] =
+      implicit def caseTwoTwo[A1, A2, A3, A4]: Case.Aux[Two[A1, A2], Two[A3, A4], Four[A1, A2, A3, A4]] =
         at[Two[A1, A2], Two[A3, A4]] { (d1, d2) => Four(d1.a1, d1.a2, d2.a1, d2.a2) }
 
-      implicit def caseThreeOne[A1, A2, A3, A4] =
-        at[Three[A1, A2, A4], One[A4]] { (d1, d2) => Four(d1.a1, d1.a2, d1.a3, d2.a1) }
+      implicit def caseThreeOne[A1, A2, A3, A4]: Case.Aux[Three[A1, A2, A3], One[A4], Four[A1, A2, A3, A4]] =
+        at[Three[A1, A2, A3], One[A4]] { (d1, d2) => Four(d1.a1, d1.a2, d1.a3, d2.a1) }
 
     }
   }
@@ -286,7 +286,7 @@ object FingerTree {
 
   object AddAllL extends Poly2 {
     implicit def caseHNil[T <: FingerTree]: Case.Aux[HNil, T, T] = at[HNil, T] { (l, t) => t }
-    //implicit def caseHNilType[T <: FingerTree]: Case.Aux[HNil.type, T, T] = at[HNil.type, T] { (l, t) => t }
+    implicit def caseHNilType[T <: FingerTree]: Case.Aux[HNil.type, T, T] = at[HNil.type, T] { (l, t) => t }
 
     implicit def caseHList[
       HH, HT <: HList, T <: FingerTree, Out1 <: FingerTree, Out2 <: FingerTree
