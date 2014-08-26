@@ -76,7 +76,9 @@ object Digit {
 }
 
 
-sealed abstract class ZList[R[_, _], A, B]
+sealed abstract class ZList[R[_, _], A, B] {
+  def :::[AA](pr: R[AA, A]): ZList[R, AA, B] = ZList.:::[R, AA, A, B](pr, this)  
+}
 
 object ZList {
   case class ZNil[R[_, _], A]() extends ZList[R, A, A]
@@ -90,6 +92,7 @@ object TFingerTree {
   import Digit._
   import Node._
   import TViewl._
+  import ZList._
 
   case class Empty[R[_, _], A]() extends TFingerTree[R, A, A]
 
@@ -151,11 +154,70 @@ object TFingerTree {
     }
   }
 
+  def addAllL[R[_, _], A, B, C, D](l: ZList[R, A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
+    l match {
+      case _:ZNil[R, B] => tree
+      case h ::: t => prepend(h, addAllL(t, tree))
+    }
+  }
 
+  def addAllR[R[_, _], A, B, C, D](tree: TFingerTree[R, A, B], l: ZList[R, B, C]): TFingerTree[R, A, C] = {
+    l match {
+      case _:ZNil[R, B] => tree
+      case h ::: t => addAllR(append(tree, h), t)
+    }
+  }
 
-  // def app3[R[_, _], A, B, C, D](t1: TFingerTree[R, A, B], hl: HA :: HT, t2: TFingerTree[R, B, C]) = {
+  def nodes[R[_, _], A, B](l: ZList[R, A, B]): ZList[({ type N[U, V] = Node[R, U, V] })#N, A, B] = l match {
+    case h1 ::: t => t match {
+      case _:ZNil[R, B] => sys.error("Unmanaged Case")
+      case t2 => t2 match {
+        case h2 ::: t2 => t2 match {
+          case _:ZNil[R, B] => Node2(h1, h2) ::: ZNil[({ type N[U, V] = Node[R, U, V] })#N, B]()
+          case t3 => t3 match {
+            case h3 ::: t3 => t3 match {
+              case _:ZNil[R, B] => Node3(h1, h2, h3) ::: ZNil[({ type N[U, V] = Node[R, U, V] })#N, B]
+              case t4 => t4 match {
+                case h4 ::: t5 => t5 match {
+                  case _:ZNil[R, B] => Node2(h1, h2) ::: Node2(h3, h4) ::: ZNil[({ type N[U, V] = Node[R, U, V] })#N, B]
+                  case t6 => sys.error("Unmanaged Too Long List")
+                }
+                case _ => Node3(h1, h2, h3) ::: nodes(t3)
+              }
+            }
+            case _ => sys.error("Unmanaged Case")
+          }
+        }
+        case _ => sys.error("Unmanaged Case")
+      }
+    }
+    case _ => sys.error("Unmanaged Case")
+  }
 
-  // }
+  def app3[R[_, _], A, B, C, D](t1: TFingerTree[R, A, B], l: ZList[R, B, C], t2: TFingerTree[R, C, D]): TFingerTree[R, A, D] = {
+    t1 match {
+      case _:Empty[R, A] => addAllL(l, t2)
+      case t11: Single[R, A, B] => prepend(t11.a, addAllL(l, t2))
+      case t11: Deep[R, A, u, v, B] => t2 match {
+        case _:Empty[R, C] => addAllR(t1, l)
+        case t22: Single[R, C, D] => append(addAllR(t1, l), t22.a)
+        case t22: Deep[R, C, w, x, D] => deep(
+          t11.prefix,
+          app3(
+            t11.middle,
+            nodes(
+              append(
+                Digit.toList(t11.suffix),
+                append(l, Digit.toList(t22.prefix))
+              )
+            ),
+            t22.middle
+          ),
+          t11.suffix
+        )
+      }
+    }
+  }
 }
 
   // def toList[R[_, _], A, B](d: One[R, A, B]) = d.a1 :: HNil
