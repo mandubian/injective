@@ -3,6 +3,7 @@
   *
   * But deeply inspired by Scala Async project <https://github.com/scala/async>
   */
+  /*
 import org.scalatest._
 
 import scalaz.{Free, Coyoneda}
@@ -74,3 +75,4 @@ class MacroSpec extends FlatSpec with Matchers {
   }
 
 }
+*/

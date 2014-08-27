@@ -3,7 +3,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 import scala.reflect.api.Universe
 import scala.reflect.internal.Flags
-
+/*
 object FreeCompile {
   def compile[T](body: T): Unit = macro compileImpl[T]
 
@@ -51,3 +51,4 @@ object FreeCompile {
   }
 
 }
+*/

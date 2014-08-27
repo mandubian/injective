@@ -112,6 +112,35 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
 
   }
 
+  "TFingerTree" should "app3" in {
+    import ZList._
+
+    type R[A, B] = A => Id[B]
+
+    val f0 = (i:Double) => i * i
+    val f1 = (i:Double) => i.toFloat
+    val f2 = (i:Float) => i.toInt
+    val f3 = (i:Int) => i.toString
+    val f4 = (i:String) => i + "toto"
+    val f5 = (i:String) => i + "tata"
+
+    val t1 = TFingerTree.Single(f0)
+    val l = :::(f1, :::(f2, :::(f3, :::(f4, ZNil[R, String]()))))
+    val t2 = TFingerTree.Single(f5)
+
+    val t3 = TFingerTree.app3(t1, l, t2)
+    t3 should equal (
+      Deep(
+        Two(f0, f1),
+        TFingerTree.single[({ type N[U, V] = Node[R, U, V] })#N, Float, String](Node.Node3(f2, f3, f4)),
+        One(f5)
+      )
+    )
+
+    println("T3:"+t3)
+
+  }
+
   "TFingerTree" should "Digit.fromList" in {
     import ZList._
 
