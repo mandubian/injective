@@ -114,7 +114,13 @@ object FreeTest {
   }
 
   def addNbad(n: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
-    Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
+    //Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
+
+    def step(i: Int, it: It[Int, Int]): It[Int, Int] = {
+      if(i < n) step(i+1, M.bind(it)(addGet _)) else it
+    }
+
+    step(0, M.point[Int](0))
   }
 
   def feedAll[I, A](it: It[I, A])(l: Seq[I])(implicit M: Monad[({ type l[X] = It[I, X] })#l]): Option[A] = {
