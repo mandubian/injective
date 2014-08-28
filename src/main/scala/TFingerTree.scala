@@ -89,9 +89,9 @@ object Digit {
 sealed abstract class ZList[R[_, _], A, B] {
   import ZList._
 
-  def :::[AA](pr: R[AA, A]): ZList[R, AA, B] = ZList.:::[R, AA, A, B](pr, this)
+  def :::[AA](pr: => R[AA, A]): ZList[R, AA, B] = ZList.:::[R, AA, A, B](pr, this)
 
-  def append[C](other: ZList[R, B, C]): ZList[R, A, C] = {
+  def append[C](other: => ZList[R, B, C]): ZList[R, A, C] = {
     this match {
       case _:ZNil[R, B] => other.asInstanceOf[ZList[R, A, C]]
       case (h ::: t) => h ::: (t append other)
@@ -103,6 +103,8 @@ object ZList {
   case class ZNil[R[_, _], A]() extends ZList[R, A, A]
 
   case class :::[R[_, _], A, B, C](head: R[A, B], tail: ZList[R, B, C]) extends ZList[R, A, C]
+
+  def :::[R[_, _], A, B, C](head: R[A, B], tail: => ZList[R, B, C]) = new :::[R, A, B, C](head, tail)
 }
 
 sealed abstract class TFingerTree[R[_, _], A, B]
@@ -133,7 +135,7 @@ object TFingerTree {
     suffix: Digit[R, C, D]
   ) = new Deep[R, A, B, C, D](prefix, middle, suffix)
 
-  def prepend[R[_, _], A, B, C](a: R[A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
+  def prepend[R[_, _], A, B, C](a: => R[A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
     tree match {
       case t: Empty[R, C] => single(a)
       case t: Single[R, B, C] => deep(One(a), empty[({ type N[U, V] = Node[R, U, V] })#N, B](), One(t.a))
@@ -153,7 +155,7 @@ object TFingerTree {
     }
   }
 
-  def append[R[_, _], A, B, C](tree: TFingerTree[R, A, B], a: R[B, C]): TFingerTree[R, A, C] = {
+  def append[R[_, _], A, B, C](tree: TFingerTree[R, A, B], a: => R[B, C]): TFingerTree[R, A, C] = {
     tree match {
       case t: Empty[R, B] => single(a)
       case t: Single[R, A, B] => deep(One(t.a), empty[({ type N[U, V] = Node[R, U, V] })#N, B](), One(a))
@@ -173,14 +175,14 @@ object TFingerTree {
     }
   }
 
-  def addAllL[R[_, _], A, B, C, D](l: ZList[R, A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
+  def addAllL[R[_, _], A, B, C, D](l: ZList[R, A, B], tree: => TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
     l match {
       case _:ZNil[R, B] => tree
       case h ::: t => prepend(h, addAllL(t, tree))
     }
   }
 
-  def addAllR[R[_, _], A, B, C, D](tree: TFingerTree[R, A, B], l: ZList[R, B, C]): TFingerTree[R, A, C] = {
+  def addAllR[R[_, _], A, B, C, D](tree: => TFingerTree[R, A, B], l: ZList[R, B, C]): TFingerTree[R, A, C] = {
     l match {
       case _:ZNil[R, B] => tree
       case h ::: t => addAllR(append(tree, h), t)
@@ -213,7 +215,11 @@ object TFingerTree {
     case _ => sys.error("Unmanaged Case")
   }
 
-  def app3[R[_, _], A, B, C, D](t1: TFingerTree[R, A, B], l: ZList[R, B, C], t2: TFingerTree[R, C, D]): TFingerTree[R, A, D] = {
+  def app3[R[_, _], A, B, C, D](
+    t1: TFingerTree[R, A, B],
+    l: ZList[R, B, C],
+    t2: => TFingerTree[R, C, D]
+  ): TFingerTree[R, A, D] = {
     t1 match {
       case _:Empty[R, A] => addAllL(l, t2)
       case t11: Single[R, A, B] => prepend(t11.a, addAllL(l, t2))
@@ -235,9 +241,9 @@ object TFingerTree {
     }
   }
 
-  def deepl[R[_, _], A, B, C, D](
+  def deepL[R[_, _], A, B, C, D](
     pr: ZList[R, A, B],
-    m: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
+    m:  => TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     sf: Digit[R, C, D]
   )(implicit TS: TSequence[TFingerTree]): TFingerTree[R, A, D] = {
     import TViewl._
@@ -246,8 +252,7 @@ object TFingerTree {
 
     pr match {
       case _:ZNil[R, B] =>
-        val view = TS.tviewl[N, B, C](m)
-        view match {
+        TS.tviewl[N, B, C](m) match {
           case EmptyL() => Digit.toTree(sf).asInstanceOf[TFingerTree[R, A, D]]
           case l:TViewl.LeafL[TFingerTree, N, B, u, C] =>
             deep(l.head.toDigit, l.tail, sf)
@@ -259,8 +264,8 @@ object TFingerTree {
 
   implicit object TFingerTreeSeq extends TSequence[TFingerTree] {
     def tempty[C[_, _], X]: TFingerTree[C, X, X] = TFingerTree.empty[C, X]()
-    def tsingleton[C[_, _], X, Y](c: C[X, Y]): TFingerTree[C, X, Y] = TFingerTree.single[C, X, Y](c)
-    def tappend[C[_, _], X, Y, Z](a: TFingerTree[C, X, Y], b: TFingerTree[C, Y, Z]): TFingerTree[C, X, Z] = {
+    def tsingleton[C[_, _], X, Y](c: => C[X, Y]): TFingerTree[C, X, Y] = TFingerTree.single[C, X, Y](c)
+    def tappend[C[_, _], X, Y, Z](a: TFingerTree[C, X, Y], b: => TFingerTree[C, Y, Z]): TFingerTree[C, X, Z] = {
       app3(a, ZNil[C, Y](), b)
     }
     def tviewl[C[_, _], X, Y](s: TFingerTree[C, X, Y]): TViewl[TFingerTree, C, X, Y] = {
@@ -269,7 +274,11 @@ object TFingerTree {
         case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](t.a, TFingerTree.empty[C, Y]())
         case t: Deep[C, X, u, v, Y] =>
           Digit.toList(t.prefix) match {
-            case hh ::: tt => TViewl.LeafL(hh, TFingerTree.deepl(tt, t.middle, t.suffix))
+            case hh ::: tt => 
+              TViewl.leafL(
+                hh, 
+                TFingerTree.deepL(tt, t.middle, t.suffix)
+              )
           }
       }
     }

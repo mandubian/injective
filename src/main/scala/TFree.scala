@@ -6,8 +6,8 @@ import poly._
 
 trait TSequence[S[_[_, _], _, _]] {
   def tempty[C[_, _], X]: S[C, X, X]
-  def tsingleton[C[_, _], X, Y](c: C[X, Y]): S[C, X, Y]
-  def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: S[C, Y, Z]): S[C, X, Z]
+  def tsingleton[C[_, _], X, Y](c: => C[X, Y]): S[C, X, Y]
+  def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: => S[C, Y, Z]): S[C, X, Z]
   def tviewl[C[_, _], X, Y](s: S[C, X, Y]): TViewl[S, C, X, Y]
 }
 
@@ -17,6 +17,11 @@ object TViewl {
   case class EmptyL[S[_[_, _], _, _], C[_, _], X]() extends TViewl[S, C, X, X]
 
   case class LeafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: C[X, Y], tail: S[C, Y, Z]) extends TViewl[S, C, X, Z]
+
+  def leafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: C[X, Y], tail: => S[C, Y, Z]) = {
+    lazy val tailz = tail
+    LeafL(head, tailz)
+  }
 }
 
 
@@ -27,7 +32,16 @@ object TFreeView {
   case class Impure[S[_], A](a: S[TFree[S, A]]) extends TFreeView[S, A]
 }
 
-sealed trait TFree[S[_], A]
+sealed trait TFree[S[_], A] {
+  import TFree._
+
+  def toView(implicit F: Functor[S], TS: TSequence[TFingerTree]) = TFree.toView(this)
+
+  def map[B](f: A => B): TFree[S, B] = {
+    val M = TFreeMonad[S]
+    M.bind(this)( (a:A) => M.point(f(a)) )
+  }
+}
 
 object TFree {
   import TFreeView._
@@ -81,31 +95,8 @@ object TFree {
 
 
 
-// case class Get[I, A](f: I => A)
 
-// object TTFreeTest {
-//   import TTFree._
-//   import TFree._
-//   import TFreeView._
 
-//   type It[I, A] = TFree[({ type l[T] = Get[I, T]})#l, A]
-
-//   def get[I]: It[I, I] = {
-//     type L[T] = ({ type l[T] = Get[I, T]})#l[T]
-
-//     fromView[
-//       L, I, Impure[L, I]
-//     ](
-//       Impure[L, I](Get( (i:I) => 
-//         fromView[L, I, Pure[L, I]](Pure[L, I](i))
-//       ))
-//     )
-//   }
-
-//   // def addGet(i: Int): It[Int, Int] = {
-//   //   get[Int]
-//   // }
-// }
 
 
 
