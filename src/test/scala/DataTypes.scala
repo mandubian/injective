@@ -20,6 +20,11 @@ object ADT {
   case class Tell(msg: String) extends Interact[Unit]
   case object EndI extends Interact[End.type]
 
+  sealed trait FileSystem[A]
+  case class ReadLine extends FileSystem[String]
+  case class PutLine(line: String) extends FileSystem[Unit]
+  case class Eof extends FileSystem[Unit]
+
   sealed trait Auth[A]
   case class Login(u: UserID, p: Password) extends Auth[Option[User]]
   case class HasPermission(u: User, p: Permission) extends Auth[Boolean]
