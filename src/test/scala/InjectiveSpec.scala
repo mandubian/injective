@@ -24,43 +24,43 @@ class InjectiveSpec extends FlatSpec with Matchers {
   import ADT._
   import Interpreters._
 
-  "ShapeApp" should "run 1st App" in {
+  // "ShapeApp" should "run 1st App" in {
 
-    // APP DEFINITION
-    type App[A]     = Interact[A] :+: Auth[A] :+: CNil
-    type CoyoApp[A] = Coyoneda[App, A]
+  //   // APP DEFINITION
+  //   type App[A]     = Interact[A] :+: Auth[A] :+: CNil
+  //   type CoyoApp[A] = Coyoneda[App, A]
 
-    // THE HELPERS
-    object interacts {
-      def ask(prompt: String) = Copoyo[App](Ask(prompt))
-      def tell(msg: String) = Copoyo[App](Tell(msg))
-    }
+  //   // THE HELPERS
+  //   object interacts {
+  //     def ask(prompt: String) = Copoyo[App](Ask(prompt))
+  //     def tell(msg: String) = Copoyo[App](Tell(msg))
+  //   }
 
-    object auths {
-      def login(u: UserID, p: Password) = Copoyo[App](Login(u, p))
-      def hasPermission(u: User, p: Permission) = Copoyo[App](HasPermission(u, p))
-    }
+  //   object auths {
+  //     def login(u: UserID, p: Password) = Copoyo[App](Login(u, p))
+  //     def hasPermission(u: User, p: Permission) = Copoyo[App](HasPermission(u, p))
+  //   }
 
-    val KnowSecret = "KnowSecret"
+  //   val KnowSecret = "KnowSecret"
 
-    // THE PROGRAM
-    val prg = {
-      import interacts._, auths._
-      for {
-        uid <- ask("What's your user ID?")
-        pwd <- ask("Password, please.")
-        u   <- login(uid, pwd)
-        b   <- u map (hasPermission(_, KnowSecret)) getOrElse (Free.Return[CoyoApp, Boolean](false))
-        _   <- if (b) tell("UUDDLRLRBA") else tell("Go away!")
-      } yield ()
-    }
+  //   // THE PROGRAM
+  //   val prg = {
+  //     import interacts._, auths._
+  //     for {
+  //       uid <- ask("What's your user ID?")
+  //       pwd <- ask("Password, please.")
+  //       u   <- login(uid, pwd)
+  //       b   <- u map (hasPermission(_, KnowSecret)) getOrElse (Free.Return[CoyoApp, Boolean](false))
+  //       _   <- if (b) tell("UUDDLRLRBA") else tell("Go away!")
+  //     } yield ()
+  //   }
 
-    // THE EXECUTION
-    //val interpreters: App ~> Id = Console or CoproductNat(TestAuth)
-    //val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
-    //prg.mapSuspension(lis)
+  //   // THE EXECUTION
+  //   //val interpreters: App ~> Id = Console or CoproductNat(TestAuth)
+  //   //val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
+  //   //prg.mapSuspension(lis)
 
-  }
+  // }
 
   "ShapeApp" should "run second app" in {
     // APP DEFINITION
@@ -96,8 +96,20 @@ class InjectiveSpec extends FlatSpec with Matchers {
 
 
 
+  /*"ShapeApp" should "run 3rd app" in {
+    // APP DEFINITION
+    type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
+    type CoyoApp[A] = Coyoneda[App, A]
+    type FreeApp[A] = Free.FreeC[App, A]
 
-
+    // THE PROGRAM
+    def prg: FreeApp[Unit] =
+      for {
+        line <- ReadLine()
+        _    <- Log(InfoLevel, "read "+line)
+        _    <- PutLine(line)
+      }
+  }*/
 
 
 
