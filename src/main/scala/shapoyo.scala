@@ -97,6 +97,27 @@ object Shapoyo {
     }
   }
 
+  def tcopoyo[C[_] <: Coproduct, F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): TFree.TFreeC[C, A] = {
+    type Copro[A]  = C[A]
+    type Copoyo[A] = Coyoneda[Copro, A]
+
+    //val c: Copoyo[A] = Coyoneda lift Coproduct[C[A]](fa)
+
+    TFree.fromView[Copoyo, A](
+      TFreeView.Pure[Copoyo, A](Coproduct[C[A]](fa))
+    )
+  }
+
+  // class Copoyo[C[_] <: Coproduct] {
+  //   def apply[F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): Free.FreeC[C, A] =
+  //     Free.liftFC(Coproduct[C[A]](fa))
+  // }
+
+  // object Copoyo {
+  //   def apply[C[_] <: Coproduct] = new Copoyo[C]
+  // }
+
+
   // object Program {
   //   def apply[C[_] <: Coproduct] = new Program[C]
   // }

@@ -97,10 +97,11 @@ class InjectiveSpec extends FlatSpec with Matchers {
 
 
   "ShapeApp" should "run 3rd app" in {
+    import TFree._
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
-    type FreeApp[A] = Free.FreeC[App, A]
+    type TFreeApp[A] = TFree.TFreeC[App, A]
 
     // THE PROGRAM
     def prg: FreeApp[Unit] =
@@ -116,7 +117,17 @@ class InjectiveSpec extends FlatSpec with Matchers {
     val interpreters: App ~> Id = File ||: Logger
     val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
 
-    println("RESULT:"+prg.foldMap(lis))
+    // def eval[S, A](t: FreeApp[A]): A = t.resume match {
+    //   case \/-(_) => ()
+    //   case -\/(coyo) => coyo
+    // }
+
+    try {
+      //prg.mapSuspension(lis)
+  //    println("RESULT:"+prg.foldMap(lis))
+    } catch {
+      case e:Throwable => e.printStackTrace
+    }
   }
 
 

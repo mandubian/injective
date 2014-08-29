@@ -62,7 +62,7 @@ object Interpreters {
   }
 
   object File extends (FileSystem ~> Id) {
-    val l = Seq.fill(1000000)("tata")
+    val l = Seq.fill(1000)("tata")
     var i = 0
     def apply[A](fs: FileSystem[A]) = fs match {
       case ReadLine =>

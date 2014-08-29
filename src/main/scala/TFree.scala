@@ -89,6 +89,9 @@ object TFree {
         )
     }
   }
+
+  type TFreeC[S[_], A] = TFree[({type f[x] = Coyoneda[S, x]})#f, A]
+
 }
 
 
