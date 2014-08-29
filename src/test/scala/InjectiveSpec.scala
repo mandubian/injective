@@ -62,41 +62,41 @@ class InjectiveSpec extends FlatSpec with Matchers {
 
   // }
 
-  "ShapeApp" should "run second app" in {
-    // APP DEFINITION
-    type App[A] = Interact[A] :+: LogA[A] :+: Storage[String, Int, A] :+: CNil
-    type CoyoApp[A] = Coyoneda[App, A]
-    type FreeApp[A] = Free.FreeC[App, A]
+  // "ShapeApp" should "run second app" in {
+  //   // APP DEFINITION
+  //   type App[A] = Interact[A] :+: LogA[A] :+: Storage[String, Int, A] :+: CNil
+  //   type CoyoApp[A] = Coyoneda[App, A]
+  //   type FreeApp[A] = Free.FreeC[App, A]
 
-    implicit val functor: scalaz.Monad[FreeApp] = Free.freeMonad[CoyoApp]
-    implicitly[scalaz.Functor[FreeApp]]
-    implicit def CopoyoApp[F[_], A](f: F[A])(implicit inj: Inject[App[A], F[A]]) = Copoyo[App](f)
+  //   implicit val functor: scalaz.Monad[FreeApp] = Free.freeMonad[CoyoApp]
+  //   implicitly[scalaz.Functor[FreeApp]]
+  //   implicit def CopoyoApp[F[_], A](f: F[A])(implicit inj: Inject[App[A], F[A]]) = Copoyo[App](f)
 
-    def parse(cmd: String) = {
-      if     (cmd == "put") Copoyo[App](Put("alpha", 5): StorageSI[Unit])
-      else if(cmd == "get") Copoyo[App](Get("alpha"): StorageSI[Int])
-      else if(cmd == "end") Copoyo[App](EndI)
-      else                  Copoyo[App](Log(ErrorLevel, s"Unknown Command: $cmd"))
-    }
+  //   def parse(cmd: String) = {
+  //     if     (cmd == "put") Copoyo[App](Put("alpha", 5): StorageSI[Unit])
+  //     else if(cmd == "get") Copoyo[App](Get("alpha"): StorageSI[Int])
+  //     else if(cmd == "end") Copoyo[App](EndI)
+  //     else                  Copoyo[App](Log(ErrorLevel, s"Unknown Command: $cmd"))
+  //   }
 
-    // THE PROGRAM
-    def prg: FreeApp[Unit] =
-      for {
-        cmd <- Ask("Enter command?")
-        i   <- parse(cmd)
-        _   <- if(i != End) prg else Copoyo[App](EndI)
-      } yield ()
+  //   // THE PROGRAM
+  //   def prg: FreeApp[Unit] =
+  //     for {
+  //       cmd <- Ask("Enter command?")
+  //       i   <- parse(cmd)
+  //       _   <- if(i != End) prg else Copoyo[App](EndI)
+  //     } yield ()
 
-    val interpreters: App ~> Id = Console ||: Logger ||: Store
-    val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
+  //   val interpreters: App ~> Id = Console ||: Logger ||: Store
+  //   val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
 
-    println("RESULT:"+prg.foldMap(lis))
-    println("store:"+store)
-  }
+  //   println("RESULT:"+prg.foldMap(lis))
+  //   println("store:"+store)
+  // }
 
 
 
-  /*"ShapeApp" should "run 3rd app" in {
+  "ShapeApp" should "run 3rd app" in {
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -105,11 +105,19 @@ class InjectiveSpec extends FlatSpec with Matchers {
     // THE PROGRAM
     def prg: FreeApp[Unit] =
       for {
-        line <- ReadLine()
-        _    <- Log(InfoLevel, "read "+line)
-        _    <- PutLine(line)
-      }
-  }*/
+        line <- Copoyo[App](ReadLine)
+        _    <- Copoyo[App](Log(InfoLevel, "read "+line))
+        _    <- line match {
+                  case Some(line) => Copoyo[App](PutLine(line)) flatMap ( _ => prg )
+                  case None       => Copoyo[App](Eof)
+                }
+      } yield ()
+
+    val interpreters: App ~> Id = File ||: Logger
+    val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
+
+    println("RESULT:"+prg.foldMap(lis))
+  }
 
 
 

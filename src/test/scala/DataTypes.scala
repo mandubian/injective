@@ -21,9 +21,9 @@ object ADT {
   case object EndI extends Interact[End.type]
 
   sealed trait FileSystem[A]
-  case class ReadLine extends FileSystem[String]
+  case object ReadLine extends FileSystem[Option[String]]
   case class PutLine(line: String) extends FileSystem[Unit]
-  case class Eof extends FileSystem[Unit]
+  case object Eof extends FileSystem[Unit]
 
   sealed trait Auth[A]
   case class Login(u: UserID, p: Password) extends Auth[Option[User]]
@@ -58,6 +58,18 @@ object Interpreters {
       case Tell(msg) =>
         println(msg)
       case EndI => println("END"); End
+    }
+  }
+
+  object File extends (FileSystem ~> Id) {
+    val l = Seq.fill(1000000)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i)); i+=1; r }
+        else None
+      case PutLine(line) => println(line)
+      case Eof => println("EOF")
     }
   }
 
