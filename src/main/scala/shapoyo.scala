@@ -104,7 +104,9 @@ object Shapoyo {
     //val c: Copoyo[A] = Coyoneda lift Coproduct[C[A]](fa)
 
     TFree.fromView[Copoyo, A](
-      TFreeView.Pure[Copoyo, A](Coproduct[C[A]](fa))
+      TFreeView.Impure[Copoyo, A](
+        (Coyoneda lift (Coproduct[C[A]](fa) map M.point))
+      )
     )
   }
 
