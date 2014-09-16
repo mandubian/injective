@@ -50,32 +50,43 @@ sealed trait TFree[S[_], A] {
     M.bind(this)(f)
   }
 
-  import scalaz.~>
+  import poly.~>
 
-  final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): TFree[T, A] = {
-    val view = toView match {
-      case Pure(a) => Pure[T, A](a)
-      case Impure(a) => Impure[T, A](f(S.map(a){ tf => tf mapSuspension f }))
-    }
-    TFree.fromView(view)
-  }
+  // final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): TFree[T, A] = {
+  //   val view = toView match {
+  //     case Pure(a) => Pure[T, A](a)
+  //     case Impure(a) => Impure[T, A](f(S.map(a){ tf => tf mapSuspension f }))
+  //   }
+  //   TFree.fromView(view)
+  // }
 
   final def foldMap[M[_]](f: S ~> M)(implicit S: Functor[S], M: Monad[M]): M[A] = {
+    println("FOLDMAP B");
     toView match {
-      case Pure(a)   => Monad[M].pure(a)
-      case Impure(a) => Monad[M].bind(f(a))(_.foldMap(f))
+      case Pure(a)   => println("F:"+a); M.point(a)
+      case Impure(a) => 
+        println("F Impure");
+        val m = M.bind(f(a)){ x => println("FOLDMAP IN"); x.foldMap(f) }
+        m
     }
   }
 
   /** Runs a trampoline all the way to the end, tail-recursively. */
-  def run(implicit ev: TFree[S, A] =:= Trampoline[A]): A =
+  def run(implicit ev: TFree[S, A] =:= Trampoline[A]): A = {
+    println("RUN")
     ev(this).go(_())
+  }
 
   /** Runs to completion, using a function that extracts the resumption from its suspension functor. */
   final def go(f: S[TFree[S, A]] => TFree[S, A])(implicit S: Functor[S]): A = {
-    @tailrec def go2(t: TFree[S, A]): A = t.toView match {
-      case Impure(a) => go2(f(a))
-      case Pure(a)   => a
+    @tailrec def go2(t: TFree[S, A]): A = {
+      println("GO")
+      val v = t.toView
+      println("V:"+v)
+      v match {
+        case Impure(a) => println("Impure"); go2(f(a))
+        case Pure(a)   => println("A:"+a); a
+      }
     }
     go2(this)
   }
@@ -97,17 +108,32 @@ object TFree {
     implicit F: Functor[S], TS: TSequence[TFingerTree]
   ): TFreeView[S, A] = free match {
     case f:FM[S, x, A] => f.head match {
-      case Pure(x) => TS.tviewl[({ type l[X, Y] = FC[S, X, Y] })#l, x, A](f.tail) match {
-        case _: TViewl.EmptyL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, x] => Pure(x)
-        case l: TViewl.LeafL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, u, v, A] =>
-          l.head(x.asInstanceOf[u]) match {
-            case f: FM[S, x, v] => toView(FM(f.head, TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, x, v, A](f.tail, l.tail)))
-          }
-      }
-      case Impure(a) => Impure(F.map(a){
-        case f2: FM[S, y, x] =>
-          FM(f2.head, TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, y, x, A](f2.tail, f.tail))
-      })
+      case Pure(x) =>
+        println("TOVIEW PURE "+x)
+        TS.tviewl[({ type l[X, Y] = FC[S, X, Y] })#l, x, A](f.tail) match {
+          case _: TViewl.EmptyL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, x] => 
+            println("TOVIEW EmptyL")
+            Pure(x)
+
+          case l: TViewl.LeafL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, u, v, A] =>
+            println("TOVIEW NOT Empty "+l)
+            toView(
+              l.head(x.asInstanceOf[u]) match {
+                case f: FM[S, x, v] =>
+                  println("TOVIEW NOT Empty IN "+f)
+                  FM(
+                    f.head,
+                    TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, x, v, A](f.tail, l.tail)
+                  )
+              }
+            )
+        }
+      case Impure(a) =>
+        println("TOVIEW IMPURE")
+        Impure(F.map(a){
+          case f2: FM[S, y, x] =>
+            FM(f2.head, TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, y, x, A](f2.tail, f.tail))
+        })
     }
   }
 

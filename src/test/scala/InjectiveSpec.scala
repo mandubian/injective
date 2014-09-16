@@ -94,7 +94,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
   //   println("store:"+store)
   // }
 
-
+/*
   "ShapeApp" should "run 3rd app 1" in {
     import TFree._
     // APP DEFINITION
@@ -120,24 +120,24 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
     try {
       //println("RESULT:"+prg.mapSuspension(lis).run)
-      testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
+      // testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
       // testTime("TFree 2000") { prg.foldMap(buildInterpreter(2000)).run }
       // testTime("TFree 3000") { prg.foldMap(buildInterpreter(3000)).run }
       // testTime("TFree 4000") { prg.foldMap(buildInterpreter(4000)).run }
       // testTime("TFree 5000") { prg.foldMap(buildInterpreter(5000)).run }
-      testTime("Scalaz Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
-      testTime("Scalaz Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
-      testTime("Scalaz Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
-      testTime("Scalaz Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
-      testTime("Scalaz Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      testTime("Scalaz Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
+      // testTime("Scalaz Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
+      // testTime("Scalaz Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
+      // testTime("Scalaz Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
+      // testTime("Scalaz Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
+      // testTime("Scalaz Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
+      // testTime("Scalaz Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
       // testTime("TFree 500000") { prg.foldMap(buildInterpreter(500000)).run }
       // testTime("TFree 1000000") { prg.foldMap(buildInterpreter(1000000)).run }
     } catch {
       case e:Throwable => e.printStackTrace
     }
   }
-
+*/
 
   "ShapeApp" should "run 3rd app TFree" in {
     import TFree._
@@ -150,7 +150,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     def prg: TFreeApp[Unit] =
       for {
         line <- TCopoyo[App](ReadLine)
-        _    <- TCopoyo[App](Log(InfoLevel, "read "+line))
+        //_    <- TCopoyo[App](Log(InfoLevel, "read "+line))
         _    <- line match {
                   case Some(line) => TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
                   case None       => TCopoyo[App](Eof)
@@ -166,13 +166,13 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     try {
-      testTime("Fixed Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
-      testTime("Fixed Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
-      testTime("Fixed Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
-      testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
-      testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
-      testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      testTime("Fixed Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
+      // testTime("Fixed Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
+      // testTime("Fixed Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
+      // testTime("Fixed Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
+      // testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
+      // testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
+      // testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
+      testTime("Fixed Free 2") { prg.foldMap(buildInterpreter(2)).run }
 
 
       // prg.mapSuspension(lis)

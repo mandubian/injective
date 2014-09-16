@@ -22,7 +22,7 @@ object ADT {
 
   sealed trait FileSystem[A]
   case object ReadLine extends FileSystem[Option[String]]
-  case class PutLine(line: String) extends FileSystem[Unit]
+  case class PutLine(line: String) extends FileSystem[Int]
   case object Eof extends FileSystem[Unit]
 
   sealed trait Auth[A]
@@ -61,64 +61,64 @@ object Interpreters {
     }
   }
 
-  object File extends (FileSystem ~> Id) {
-    val l = Seq.fill(1000)("tata")
-    var i = 0
-    def apply[A](fs: FileSystem[A]) = fs match {
-      case ReadLine =>
-        if(i < l.size) { val r = Some(l(i)); i+=1; r }
-        else None
-      case PutLine(line) => println(line)
-      case Eof => println("EOF")
-    }
-  }
+  // object File extends (FileSystem ~> Id) {
+  //   val l = Seq.fill(1000)("tata")
+  //   var i = 0
+  //   def apply[A](fs: FileSystem[A]) = fs match {
+  //     case ReadLine =>
+  //       if(i < l.size) { val r = Some(l(i)); i+=1; r }
+  //       else None
+  //     case PutLine(line) => println(line)
+  //     case Eof => println("EOF")
+  //   }
+  // }
 
   import scalaz.{Free, Trampoline}
 
-  object File2 extends (FileSystem ~> Free.Trampoline) {
-    val l = Seq.fill(100000)("tata")
-    var i = 0
-    def apply[A](fs: FileSystem[A]) = fs match {
-      case ReadLine =>
-        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
-        else Trampoline.done(None)
-      case PutLine(line) =>
-        //Trampoline.done(println(line))
-        Trampoline.done(())
-      case Eof =>
-        Trampoline.done(println("EOF"))
-    }
-  }
+  // object File2 extends (FileSystem ~> Free.Trampoline) {
+  //   val l = Seq.fill(100000)("tata")
+  //   var i = 0
+  //   def apply[A](fs: FileSystem[A]) = fs match {
+  //     case ReadLine =>
+  //       if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+  //       else Trampoline.done(None)
+  //     case PutLine(line) =>
+  //       //Trampoline.done(println(line))
+  //       Trampoline.done(())
+  //     case Eof =>
+  //       Trampoline.done(println("EOF"))
+  //   }
+  // }
 
-  object File3 extends (FileSystem ~> TFree.Trampoline) {
-    val l = Seq.fill(100000)("tata")
-    var i = 0
-    def apply[A](fs: FileSystem[A]) = fs match {
-      case ReadLine =>
-        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; TFree.Trampoline.done(r) }
-        else TFree.Trampoline.done(None)
-      case PutLine(line) =>
-        //Trampoline.done(println(line))
-        TFree.Trampoline.done(())
-      case Eof =>
-        TFree.Trampoline.done(println("EOF"))
-    }
-  }
+  // object File3 extends (FileSystem ~> TFree.Trampoline) {
+  //   val l = Seq.fill(100000)("tata")
+  //   var i = 0
+  //   def apply[A](fs: FileSystem[A]) = fs match {
+  //     case ReadLine =>
+  //       if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; TFree.Trampoline.done(r) }
+  //       else TFree.Trampoline.done(None)
+  //     case PutLine(line) =>
+  //       //Trampoline.done(println(line))
+  //       TFree.Trampoline.done(())
+  //     case Eof =>
+  //       TFree.Trampoline.done(println("EOF"))
+  //   }
+  // }
 
-  def fileInterpreter(n: Int) = new (FileSystem ~> Free.Trampoline) {
-    val l = Seq.fill(n)("tata")
-    var i = 0
-    def apply[A](fs: FileSystem[A]) = fs match {
-      case ReadLine =>
-        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
-        else Trampoline.done(None)
-      case PutLine(line) =>
-        //Trampoline.done(println(line))
-        Trampoline.done(())
-      case Eof =>
-        Trampoline.done(println("EOF "+i))
-    }
-  }
+  // def fileInterpreter(n: Int) = new (FileSystem ~> Free.Trampoline) {
+  //   val l = Seq.fill(n)("tata")
+  //   var i = 0
+  //   def apply[A](fs: FileSystem[A]) = fs match {
+  //     case ReadLine =>
+  //       if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+  //       else Trampoline.done(None)
+  //     case PutLine(line) =>
+  //       //Trampoline.done(println(line))
+  //       Trampoline.done(())
+  //     case Eof =>
+  //       Trampoline.done(println("EOF "+i))
+  //   }
+  // }
 
   def fileInterpreter2(n: Int) = new (FileSystem ~> TFree.Trampoline) {
     val l = Seq.fill(n)("tata")
@@ -128,8 +128,8 @@ object Interpreters {
         if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; TFree.Trampoline.done(r) }
         else TFree.Trampoline.done(None)
       case PutLine(line) =>
-        //Trampoline.done(println(line))
-        TFree.Trampoline.done(())
+        TFree.Trampoline.done { println(i + " " + line); i }
+        //TFree.Trampoline.done(())
       case Eof =>
         TFree.Trampoline.done(println("EOF "+i))
     }
