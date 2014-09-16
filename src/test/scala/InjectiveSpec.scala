@@ -16,7 +16,7 @@ import scala.concurrent._
   }
 }*/
 
-class InjectiveSpec extends FlatSpec with Matchers {
+class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
   import shapeless._
   import poly._
   import ops.coproduct.{Inject, Selector}
@@ -95,13 +95,12 @@ class InjectiveSpec extends FlatSpec with Matchers {
   // }
 
 
-
-  "ShapeApp" should "run 3rd app" in {
+  "ShapeApp" should "run 3rd app 1" in {
     import TFree._
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
-    type TFreeApp[A] = TFree.TFreeC[App, A]
+    type FreeApp[A] = Free.FreeC[App, A]
 
     // THE PROGRAM
     def prg: FreeApp[Unit] =
@@ -114,17 +113,70 @@ class InjectiveSpec extends FlatSpec with Matchers {
                 }
       } yield ()
 
-    val interpreters: App ~> Id = File ||: Logger
-    val lis: CoyoApp ~> Id = liftCoyoLeft(interpreters)
-
-    // def eval[S, A](t: FreeApp[A]): A = t.resume match {
-    //   case \/-(_) => ()
-    //   case -\/(coyo) => coyo
-    // }
+    def buildInterpreter(n: Int): CoyoApp ~> Free.Trampoline = {
+      val interpreters: App ~> Free.Trampoline = fileInterpreter(n) ||: Logger2
+      liftCoyoLeft(interpreters)
+    }
 
     try {
-      //prg.mapSuspension(lis)
-  //    println("RESULT:"+prg.foldMap(lis))
+      //println("RESULT:"+prg.mapSuspension(lis).run)
+      testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
+      // testTime("TFree 2000") { prg.foldMap(buildInterpreter(2000)).run }
+      // testTime("TFree 3000") { prg.foldMap(buildInterpreter(3000)).run }
+      // testTime("TFree 4000") { prg.foldMap(buildInterpreter(4000)).run }
+      // testTime("TFree 5000") { prg.foldMap(buildInterpreter(5000)).run }
+      testTime("Scalaz Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
+      testTime("Scalaz Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
+      testTime("Scalaz Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
+      testTime("Scalaz Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
+      testTime("Scalaz Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
+      testTime("Scalaz Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
+      // testTime("TFree 500000") { prg.foldMap(buildInterpreter(500000)).run }
+      // testTime("TFree 1000000") { prg.foldMap(buildInterpreter(1000000)).run }
+    } catch {
+      case e:Throwable => e.printStackTrace
+    }
+  }
+
+
+  "ShapeApp" should "run 3rd app TFree" in {
+    import TFree._
+    // APP DEFINITION
+    type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
+    type CoyoApp[A] = Coyoneda[App, A]
+    type TFreeApp[A] = TFree.TFreeC[App, A]
+
+    // THE PROGRAM
+    def prg: TFreeApp[Unit] =
+      for {
+        line <- TCopoyo[App](ReadLine)
+        _    <- TCopoyo[App](Log(InfoLevel, "read "+line))
+        _    <- line match {
+                  case Some(line) => TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
+                  case None       => TCopoyo[App](Eof)
+                }
+      } yield ()
+
+    // val interpreters: App ~> Free.Trampoline = File2 ||: Logger2
+    // val lis: CoyoApp ~> Free.Trampoline = liftCoyoLeft(interpreters)
+
+    def buildInterpreter(n: Int): CoyoApp ~> TFree.Trampoline = {
+      val interpreters: App ~> TFree.Trampoline = fileInterpreter2(n) ||: Logger3
+      liftCoyoLeft(interpreters)
+    }
+
+    try {
+      testTime("Fixed Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
+      testTime("Fixed Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
+      testTime("Fixed Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
+      testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
+      testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
+      testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
+      testTime("Fixed Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
+
+
+      // prg.mapSuspension(lis)
+      // println("RESULT:"+prg.foldMap(lis).run)
     } catch {
       case e:Throwable => e.printStackTrace
     }
@@ -276,28 +328,28 @@ class InjectiveSpec extends FlatSpec with Matchers {
     //implicitly[Cup2[polyAuth.type :+: CNil, polyAuth.type, CNil]]
 
 
-  "ShapeApp" should "run merge" in {
-    object size extends Poly1 {
-      implicit def caseInt = at[Int] { i => 1 }
-      implicit def caseString = at[String] { s => s.size }
-    }
+  // "ShapeApp" should "run merge" in {
+  //   object size extends Poly1 {
+  //     implicit def caseInt = at[Int] { i => 1 }
+  //     implicit def caseString = at[String] { s => s.size }
+  //   }
 
-    object size2 extends Poly1 {
-      implicit def caseTuple[T, U]
-        (implicit st : size.Case.Aux[T, Int], su : size.Case.Aux[U, Int]) =
-          at[(T, U)](t => size(t._1)+size(t._2))
-    }
+  //   object size2 extends Poly1 {
+  //     implicit def caseTuple[T, U]
+  //       (implicit st : size.Case.Aux[T, Int], su : size.Case.Aux[U, Int]) =
+  //         at[(T, U)](t => size(t._1)+size(t._2))
+  //   }
 
-    object size3 extends Poly2 {
-      implicit  def default[T, U](implicit st: size.Case.Aux[T, Int], su: size.Case.Aux[U, Int]) =
-        at[T, U]{ (t, u) => size(t) + size(u) }
-    }
+  //   object size3 extends Poly2 {
+  //     implicit  def default[T, U](implicit st: size.Case.Aux[T, Int], su: size.Case.Aux[U, Int]) =
+  //       at[T, U]{ (t, u) => size(t) + size(u) }
+  //   }
 
-    val m = Merge(Merge(size, size2), size3)
-    m(5) should equal (1)
-    m("toto") should equal (4)
+  //   val m = Merge(Merge(size, size2), size3)
+  //   m(5) should equal (1)
+  //   m("toto") should equal (4)
 
-    m(5 -> "toto") should equal (5)
-    m(5, "toto") should equal (5)
-  }
+  //   m(5 -> "toto") should equal (5)
+  //   m(5, "toto") should equal (5)
+  // }
 }

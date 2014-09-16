@@ -2,7 +2,7 @@
  * Copyright 2014 Pascal Voitot (@mandubian)
  *
  */
-import scalaz.{Free, Coyoneda, Functor}
+import scalaz.{Free, Coyoneda, Functor, Unapply}
 import Coyoneda.CoyonedaF
 
 import shapeless.ops.coproduct.{Inject, Selector}
@@ -61,11 +61,22 @@ object Shapoyo {
       }
     }
 
+  // def iso[F[_]: Functor]: CoyonedaF[F]#A <~> F =
+  //   new IsoFunctorTemplate[CoyonedaF[F]#A, F] {
+  //     def from[A](fa: F[A]) = lift(fa)
+  //     def to[A](fa: Coyoneda[F, A]) = fa.run
+  //   }
+
   def liftCoyoLeft[F[_], G[_]: Functor](fg: F ~> G): CoyonedaF[F]#A ~> G = {
     type CF[A] = Coyoneda[F, A]
     type CG[A] = Coyoneda[G, A]
+
+    val m: (CF ~> CG) = liftCoyo(fg)
+    // val n: (CG ~> G) = iso[G].to
+    // n compose m
+
     new (CF ~> G) {
-      def apply[A](c: CF[A]) = liftCoyo(fg)(c).run
+      def apply[A](c: CF[A]) = m(c).run
     }
   }
 
@@ -97,27 +108,37 @@ object Shapoyo {
     }
   }
 
-  def tcopoyo[C[_] <: Coproduct, F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): TFree.TFreeC[C, A] = {
-    type Copro[A]  = C[A]
-    type Copoyo[A] = Coyoneda[Copro, A]
+  /** Suspends a value within a functor in a single step. */
+  def liftF[S[_], A](value: => S[A])(implicit S: Functor[S]): TFree[S, A] =
+    TFree.fromView[S, A](TFreeView.Impure[S, A](S.map(value){ v =>
+      TFree.fromView[S, A](TFreeView.Pure[S, A](v))
+    }))
 
-    //val c: Copoyo[A] = Coyoneda lift Coproduct[C[A]](fa)
+  /** A version of `liftF` that infers the nested type constructor. */
+  def liftFU[MA](value: => MA)(implicit MA: Unapply[Functor, MA]): TFree[MA.M, MA.A] =
+    liftF(MA(value))(MA.TC)
 
-    TFree.fromView[Copoyo, A](
-      TFreeView.Impure[Copoyo, A](
-        (Coyoneda lift (Coproduct[C[A]](fa) map M.point))
-      )
-    )
+  /** A free monad over a free functor of `S`. */
+  def liftFC[S[_], A](s: S[A]): TFree.TFreeC[S, A] =
+    liftFU(Coyoneda lift s)
+
+  // def tcopoyo[C[_] <: Coproduct, F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): TFree.TFreeC[C, A] = {
+  //   type Copro[A]  = C[A]
+  //   type Copoyo[A] = Coyoneda[Copro, A]
+
+  //   val c: Copoyo[A] = Coyoneda lift Coproduct[C[A]](fa)
+
+  //   liftFC(Coproduct[C[A]](fa))
+  // }
+
+  class TCopoyo[C[_] <: Coproduct] {
+    def apply[F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): TFree.TFreeC[C, A] =
+      liftFC(Coproduct[C[A]](fa))
   }
 
-  // class Copoyo[C[_] <: Coproduct] {
-  //   def apply[F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): Free.FreeC[C, A] =
-  //     Free.liftFC(Coproduct[C[A]](fa))
-  // }
-
-  // object Copoyo {
-  //   def apply[C[_] <: Coproduct] = new Copoyo[C]
-  // }
+  object TCopoyo {
+    def apply[C[_] <: Coproduct] = new TCopoyo[C]
+  }
 
 
   // object Program {

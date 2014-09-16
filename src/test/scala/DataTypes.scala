@@ -73,10 +73,88 @@ object Interpreters {
     }
   }
 
+  import scalaz.{Free, Trampoline}
+
+  object File2 extends (FileSystem ~> Free.Trampoline) {
+    val l = Seq.fill(100000)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+        else Trampoline.done(None)
+      case PutLine(line) =>
+        //Trampoline.done(println(line))
+        Trampoline.done(())
+      case Eof =>
+        Trampoline.done(println("EOF"))
+    }
+  }
+
+  object File3 extends (FileSystem ~> TFree.Trampoline) {
+    val l = Seq.fill(100000)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; TFree.Trampoline.done(r) }
+        else TFree.Trampoline.done(None)
+      case PutLine(line) =>
+        //Trampoline.done(println(line))
+        TFree.Trampoline.done(())
+      case Eof =>
+        TFree.Trampoline.done(println("EOF"))
+    }
+  }
+
+  def fileInterpreter(n: Int) = new (FileSystem ~> Free.Trampoline) {
+    val l = Seq.fill(n)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+        else Trampoline.done(None)
+      case PutLine(line) =>
+        //Trampoline.done(println(line))
+        Trampoline.done(())
+      case Eof =>
+        Trampoline.done(println("EOF "+i))
+    }
+  }
+
+  def fileInterpreter2(n: Int) = new (FileSystem ~> TFree.Trampoline) {
+    val l = Seq.fill(n)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; TFree.Trampoline.done(r) }
+        else TFree.Trampoline.done(None)
+      case PutLine(line) =>
+        //Trampoline.done(println(line))
+        TFree.Trampoline.done(())
+      case Eof =>
+        TFree.Trampoline.done(println("EOF "+i))
+    }
+  }
+
   object Logger extends (LogA ~> Id) {
     def apply[A](a: LogA[A]) = a match {
       case Log(lvl, msg) =>
         println(s"$lvl $msg")
+    }
+  }
+
+  object Logger2 extends (LogA ~> Free.Trampoline) {
+    def apply[A](a: LogA[A]) = a match {
+      case Log(lvl, msg) =>
+        //Trampoline.done(println(s"$lvl $msg"))
+        Trampoline.done(())
+    }
+  }
+
+  object Logger3 extends (LogA ~> TFree.Trampoline) {
+    def apply[A](a: LogA[A]) = a match {
+      case Log(lvl, msg) =>
+        //Trampoline.done(println(s"$lvl $msg"))
+        TFree.Trampoline.done(())
     }
   }
 
