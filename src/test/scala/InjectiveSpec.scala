@@ -152,7 +152,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
         line <- TCopoyo[App](ReadLine)
         //_    <- TCopoyo[App](Log(InfoLevel, "read "+line))
         _    <- line match {
-                  case Some(line) => TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
+                  case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
                   case None       => TCopoyo[App](Eof)
                 }
       } yield ()
@@ -172,7 +172,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
       // testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
       // testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
       // testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      testTime("Fixed Free 2") { prg.foldMap(buildInterpreter(2)).run }
+      testTime("Fixed Free 200") { prg.foldMap(buildInterpreter(200)).run }
 
 
       // prg.mapSuspension(lis)
