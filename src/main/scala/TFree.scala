@@ -111,19 +111,19 @@ object TFree {
   @tailrec def toView[S[_], A](free: TFree[S, A])(
     implicit F: Functor[S], TS: TSequence[TFingerTree]
   ): TFreeView[S, A] = {
-    // println("TOVIEW FREE:" + free)
+    println("TOVIEW FREE:" + free)
 
     free match {
       case f:FM[S, x, A] => f.head match {
         case Pure(x) =>
-          // println("TOVIEW PURE " + x)
+          println("TOVIEW PURE " + x)
           TS.tviewl[({ type l[X, Y] = FC[S, X, Y] })#l, x, A](f.tail) match {
             case _: TViewl.EmptyL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, x] => 
-              // println("TOVIEW EmptyL")
+              println("TOVIEW EmptyL")
               Pure(x)
 
             case l: TViewl.LeafL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, u, v, A] =>
-              // println("TOVIEW NOT Empty "+l)
+              println("TOVIEW NOT Empty "+l)
               // println("TOVIEW NOT Empty x:"+x)
               toView(
                 l.head(x.asInstanceOf[u]) match {
@@ -133,13 +133,13 @@ object TFree {
                       TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, x, v, A](f2.tail, l.tail)
                     )
 
-                    // println("TOVIEW NOT Empty IN "+r2)
+                    println("TOVIEW NOT Empty IN "+r2)
                     r2
                 }
               )
           }
         case Impure(a) =>
-          // println("TOVIEW IMPURE")
+          println("TOVIEW IMPURE")
           Impure(F.map(a){
             case f2: FM[S, y, x] =>
               // println("TOVIEW IMPURe MAP")

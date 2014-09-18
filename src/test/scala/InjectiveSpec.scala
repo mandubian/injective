@@ -148,14 +148,23 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
     // THE PROGRAM
     def prg: TFreeApp[Unit] =
-      for {
-        line <- TCopoyo[App](ReadLine)
-        //_    <- TCopoyo[App](Log(InfoLevel, "read "+line))
-        _    <- line match {
-                  case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
-                  case None       => TCopoyo[App](Eof)
-                }
-      } yield ()
+      // for {
+      //   // _ <- TCopoyo[App](ReadLine)
+      //   // _ <- TCopoyo[App](ReadLine)
+      //   // _ <- TCopoyo[App](ReadLine)
+      //   // _ <- TCopoyo[App](ReadLine)
+      //   line <- TCopoyo[App](ReadLine)
+      //   // _ <- TCopoyo[App](Log(InfoLevel, "read "+line))
+      //   _ <- line match {
+      //           case Some(line) => prg //TCopoyo[App](PutLine(line)) //flatMap ( _ => prg )
+      //           case None       => TCopoyo[App](Eof)
+      //         }
+      // } yield ()
+      TCopoyo[App](ReadLine) flatMap { 
+        case Some(line) => prg
+        case None       => TCopoyo[App](Eof)
+      }
+
 
     // val interpreters: App ~> Free.Trampoline = File2 ||: Logger2
     // val lis: CoyoApp ~> Free.Trampoline = liftCoyoLeft(interpreters)
@@ -172,7 +181,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
       // testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
       // testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
       // testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      testTime("Fixed Free 200") { prg.foldMap(buildInterpreter(200)).run }
+      testTime("Fixed Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
 
 
       // prg.mapSuspension(lis)
