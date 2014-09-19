@@ -96,7 +96,6 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
 /*
   "ShapeApp" should "run 3rd app 1" in {
-    import TFree._
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -104,6 +103,12 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
     // THE PROGRAM
     def prg: FreeApp[Unit] =
+      Copoyo[App](ReadLine) flatMap {
+        case Some(line) => prg
+        case None       => Copoyo[App](Eof)
+      }
+
+/*    def prg: FreeApp[Unit] =
       for {
         line <- Copoyo[App](ReadLine)
         _    <- Copoyo[App](Log(InfoLevel, "read "+line))
@@ -111,7 +116,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
                   case Some(line) => Copoyo[App](PutLine(line)) flatMap ( _ => prg )
                   case None       => Copoyo[App](Eof)
                 }
-      } yield ()
+      } yield ()*/
 
     def buildInterpreter(n: Int): CoyoApp ~> Free.Trampoline = {
       val interpreters: App ~> Free.Trampoline = fileInterpreter(n) ||: Logger2
@@ -120,7 +125,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
     try {
       //println("RESULT:"+prg.mapSuspension(lis).run)
-      // testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
+      testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
       // testTime("TFree 2000") { prg.foldMap(buildInterpreter(2000)).run }
       // testTime("TFree 3000") { prg.foldMap(buildInterpreter(3000)).run }
       // testTime("TFree 4000") { prg.foldMap(buildInterpreter(4000)).run }
@@ -132,7 +137,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
       // testTime("Scalaz Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
       // testTime("Scalaz Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
       // testTime("TFree 500000") { prg.foldMap(buildInterpreter(500000)).run }
-      // testTime("TFree 1000000") { prg.foldMap(buildInterpreter(1000000)).run }
+      testTime("Scalaz Free 100000") { println("RES:"+prg.foldMap(buildInterpreter(100000)).run) }
     } catch {
       case e:Throwable => e.printStackTrace
     }
@@ -149,39 +154,50 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     // THE PROGRAM
     def prg: TFreeApp[Unit] =
       // for {
-      //   // _ <- TCopoyo[App](ReadLine)
-      //   // _ <- TCopoyo[App](ReadLine)
-      //   // _ <- TCopoyo[App](ReadLine)
-      //   // _ <- TCopoyo[App](ReadLine)
       //   line <- TCopoyo[App](ReadLine)
-      //   // _ <- TCopoyo[App](Log(InfoLevel, "read "+line))
+      // //   // _ <- TCopoyo[App](Log(InfoLevel, "read "+line))
       //   _ <- line match {
-      //           case Some(line) => prg //TCopoyo[App](PutLine(line)) //flatMap ( _ => prg )
+      //           case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
       //           case None       => TCopoyo[App](Eof)
       //         }
       // } yield ()
-      TCopoyo[App](ReadLine) flatMap { 
-        case Some(line) => prg
+      TCopoyo[App](ReadLine) flatMap {
+        case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
         case None       => TCopoyo[App](Eof)
-      }
+      } //map { _ => () }
 
 
     // val interpreters: App ~> Free.Trampoline = File2 ||: Logger2
     // val lis: CoyoApp ~> Free.Trampoline = liftCoyoLeft(interpreters)
 
     def buildInterpreter(n: Int): CoyoApp ~> TFree.Trampoline = {
-      val interpreters: App ~> TFree.Trampoline = fileInterpreter2(n) ||: Logger3
+      def interpreters: App ~> TFree.Trampoline = fileInterpreter2(n) ||: Logger3
       liftCoyoLeft(interpreters)
     }
 
     try {
-      // testTime("Fixed Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
-      // testTime("Fixed Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
-      // testTime("Fixed Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
-      // testTime("Fixed Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
-      // testTime("Fixed Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
-      // testTime("Fixed Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      testTime("Fixed Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
+      testTime("Fixed Free 1000") { prg.foldMapT(buildInterpreter(1000)).run }
+      // testTime("Fixed Free 1000000")  { prg.foldMap(buildInterpreter(1000000)).run }
+      // testTime("Fixed Free 2000000")  { prg.foldMap(buildInterpreter(2000000)).run }
+      // testTime("Fixed Free 3000000")  { prg.foldMap(buildInterpreter(3000000)).run }
+      // testTime("Fixed Free 4000000")  { prg.foldMap(buildInterpreter(4000000)).run }
+      testTime("Fixed Free 100000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(100000)).run) }
+      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
+      // testTime("Fixed Free 10000000") { prg.foldMap(buildInterpreter(10000000)).run }
+      // testTime("Fixed Free 20000000") { prg.foldMap(buildInterpreter(20000000)).run }
+      // testTime("Fixed Free 400000") { prg.foldMapT(buildInterpreter(400000)).run }
+      // testTime("Fixed Free 800000") { prg.foldMapT(buildInterpreter(800000)).run }
+      // testTime("Fixed Free 1000000") { prg.foldMapT(buildInterpreter(1000000)).run }
 
 
       // prg.mapSuspension(lis)
