@@ -10,17 +10,18 @@ import Scalaz._
 
 import scala.annotation.tailrec
 
+case class Get[I, A](f: I => A)
+
+object Get {
+  implicit def F[I] = new Functor[({ type l[T] = Get[I, T]})#l] {
+    def map[A, B](a: Get[I, A])(f: A => B): Get[I, B] = Get[I, B](i => f(a.f(i)))
+  }
+}
+
+
 object TFreeTest {
   import TFree._
   import TFreeView._
-
-  case class Get[I, A](f: I => A)
-
-  object Get {
-    implicit def F[I] = new Functor[({ type l[T] = Get[I, T]})#l] {
-      def map[A, B](a: Get[I, A])(f: A => B): Get[I, B] = Get[I, B](i => f(a.f(i)))
-    }
-  }
 
   type It[I, A] = TFree[({ type l[T] = Get[I, T]})#l, A]
 
@@ -45,7 +46,14 @@ object TFreeTest {
   }
 
   def addNbad(n: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
-    Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
+    //Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
+
+    @tailrec def step(i: Int, it: It[Int, Int]): It[Int, Int] = {
+      if(i < n) step(i+1, M.bind(it)(addGet _)) else it
+    }
+
+    step(0, M.point[Int](0))
+
   }
 
   def feedAll[I, A](it: It[I, A])(l: Seq[I])(implicit M: Monad[({ type l[X] = It[I, X] })#l]): Option[A] = {
@@ -67,9 +75,6 @@ object TFreeTest {
 
 object FreeTest {
   import Free._
-  import FreeView._
-
-  case class Get[I, A](f: I => A)
 
   sealed abstract class FreeView[S[_], A] 
 
@@ -78,6 +83,7 @@ object FreeTest {
     case class Impure[S[_], A](a: S[Free[S, A]]) extends FreeView[S, A]
   }
 
+  import FreeView._
 
   def toView[S[_]: Functor, A](free: Free[S, A]): FreeView[S, A] = free.resume match {
     case \/-(a) => Pure(a)
@@ -87,12 +93,6 @@ object FreeTest {
   def fromView[S[_], A](v: FreeView[S, A]): Free[S, A] = v match {
     case Pure(a)    => Free.Return(a)
     case Impure(f)  => Free.Suspend(f)
-  }
-
-  object Get {
-    implicit def F[I] = new Functor[({ type l[T] = Get[I, T]})#l] {
-      def map[A, B](a: Get[I, A])(f: A => B): Get[I, B] = Get[I, B](i => f(a.f(i)))
-    }
   }
 
   type It[I, A] = Free[({ type l[T] = Get[I, T]})#l, A]
@@ -114,14 +114,13 @@ object FreeTest {
   }
 
   def addGet(i: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
-    get[Int].map { x => x + i }
+    get[Int] map { x => x + i }
   }
 
   def addNbad(n: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
     //Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
 
-    @scala.annotation.tailrec
-    def step(i: Int, it: It[Int, Int]): It[Int, Int] = {
+    @tailrec def step(i: Int, it: It[Int, Int]): It[Int, Int] = {
       if(i < n) step(i+1, M.bind(it)(addGet _)) else it
     }
 
@@ -154,47 +153,49 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
 
+    testTime("TFree 1000") { println(testQuadratic(1000)) }
     testTime("TFree 10000") { println(testQuadratic(10000)) }
-    testTime("TFree 20000") { println(testQuadratic(20000)) }
-    testTime("TFree 30000") { println(testQuadratic(30000)) }
-    testTime("TFree 40000") { println(testQuadratic(40000)) }
-    testTime("TFree 50000") { println(testQuadratic(50000)) }
-    testTime("TFree 100000") { println(testQuadratic(100000)) }
-    testTime("TFree 200000") { println(testQuadratic(200000)) }
-    testTime("TFree 300000") { println(testQuadratic(300000)) }
-    testTime("TFree 400000") { println(testQuadratic(400000)) }
-    testTime("TFree 500000") { println(testQuadratic(500000)) }
-    testTime("TFree 1000000") { println(testQuadratic(1000000)) }
-    testTime("TFree 2000000") { println(testQuadratic(2000000)) }
-    testTime("TFree 3000000") { println(testQuadratic(3000000)) }
-    testTime("TFree 4000000") { println(testQuadratic(4000000)) }
-    testTime("TFree 5000000") { println(testQuadratic(5000000)) }
-    testTime("TFree 10000000") { println(testQuadratic(10000000)) }
+    // testTime("TFree 20000") { println(testQuadratic(20000)) }
+    // testTime("TFree 30000") { println(testQuadratic(30000)) }
+    // testTime("TFree 40000") { println(testQuadratic(40000)) }
+    // testTime("TFree 50000") { println(testQuadratic(50000)) }
+    // testTime("TFree 100000") { println(testQuadratic(100000)) }
+    // testTime("TFree 200000") { println(testQuadratic(200000)) }
+    // testTime("TFree 300000") { println(testQuadratic(300000)) }
+    // testTime("TFree 400000") { println(testQuadratic(400000)) }
+    // testTime("TFree 500000") { println(testQuadratic(500000)) }
+    // testTime("TFree 1000000") { println(testQuadratic(1000000)) }
+    // testTime("TFree 2000000") { println(testQuadratic(2000000)) }
+    // testTime("TFree 3000000") { println(testQuadratic(3000000)) }
+    // testTime("TFree 4000000") { println(testQuadratic(4000000)) }
+    // testTime("TFree 5000000") { println(testQuadratic(5000000)) }
+    // testTime("TFree 10000000") { println(testQuadratic(10000000)) }
 
   }
 
-  // "Free" should "compile" in {
-  //   import FreeTest._
-  //   import It._
+  "Free" should "compile" in {
+    import FreeTest._
+    import It._
 
-  //   def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
+    def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
 
-  //   testTime("Free 10000") { println(testQuadratic(10000)) }
-  //   testTime("Free 20000") { println(testQuadratic(20000)) }
-  //   testTime("Free 30000") { println(testQuadratic(30000)) }
-  //   testTime("Free 40000") { println(testQuadratic(40000)) }
-  //   testTime("Free 50000") { println(testQuadratic(50000)) }
-  //   testTime("Free 100000") { println(testQuadratic(100000)) }
-  //   testTime("Free 200000") { println(testQuadratic(200000)) }
-  //   testTime("Free 300000") { println(testQuadratic(300000)) }
-  //   testTime("Free 400000") { println(testQuadratic(400000)) }
-  //   testTime("Free 500000") { println(testQuadratic(500000)) }
-  //   testTime("Free 1000000") { println(testQuadratic(1000000)) }
-  //   testTime("Free 2000000") { println(testQuadratic(2000000)) }
-  //   testTime("Free 3000000") { println(testQuadratic(3000000)) }
-  //   testTime("Free 4000000") { println(testQuadratic(4000000)) }
-  //   testTime("Free 5000000") { println(testQuadratic(5000000)) }
-  //   testTime("Free 10000000") { println(testQuadratic(10000000)) }
+    testTime("Free 1000") { println(testQuadratic(1000)) }
+    testTime("Free 10000") { println(testQuadratic(10000)) }
+    // testTime("Free 20000") { println(testQuadratic(20000)) }
+    // testTime("Free 30000") { println(testQuadratic(30000)) }
+    // testTime("Free 40000") { println(testQuadratic(40000)) }
+    // testTime("Free 50000") { println(testQuadratic(50000)) }
+    // testTime("Free 100000") { println(testQuadratic(100000)) }
+    // testTime("Free 200000") { println(testQuadratic(200000)) }
+    // testTime("Free 300000") { println(testQuadratic(300000)) }
+    // testTime("Free 400000") { println(testQuadratic(400000)) }
+    // testTime("Free 500000") { println(testQuadratic(500000)) }
+    // testTime("Free 1000000") { println(testQuadratic(1000000)) }
+    // testTime("Free 2000000") { println(testQuadratic(2000000)) }
+    // testTime("Free 3000000") { println(testQuadratic(3000000)) }
+    // testTime("Free 4000000") { println(testQuadratic(4000000)) }
+    // testTime("Free 5000000") { println(testQuadratic(5000000)) }
+    // testTime("Free 10000000") { println(testQuadratic(10000000)) }
 
-  // }
+  }
 }

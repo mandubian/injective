@@ -34,9 +34,10 @@ object TFreeView {
   case class Impure[S[_], A](a: S[TFree[S, A]]) extends TFreeView[S, A]
 }
 
-sealed trait TFree[S[_], A] extends Instrumented {
+sealed trait TFree[S[_], A] {
   import TFree._
   import TFreeView._
+  import poly.~>
 
   def toView(implicit F: Functor[S], TS: TSequence[TFingerTree]): TFreeView[S, A] = TFree.toView(this)
 
@@ -50,15 +51,14 @@ sealed trait TFree[S[_], A] extends Instrumented {
     M.bind(this)(f)
   }
 
-  import poly.~>
-
-  // final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): TFree[T, A] = {
-  //   val view = toView match {
-  //     case Pure(a) => Pure[T, A](a)
-  //     case Impure(a) => Impure[T, A](f(S.map(a){ tf => tf mapSuspension f }))
-  //   }
-  //   TFree.fromView(view)
-  // }
+  final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): TFree[T, A] = {
+    TFree.fromView(
+      toView match {
+        case Pure(a) => Pure[T, A](a)
+        case Impure(a) => Impure[T, A](f(S.map(a){ tf => tf mapSuspension f }))
+      }
+    )
+  }
 
   final def foldMap[M[_]](f: S ~> M)(implicit S: Functor[S], M: Monad[M]): M[A] = {
     toView match {
@@ -69,14 +69,10 @@ sealed trait TFree[S[_], A] extends Instrumented {
 
   final def foldMapT(f: S ~> Trampoline)(implicit S: Functor[S]): Trampoline[A] = {
     @tailrec def step(free: TFree[S, A]): Trampoline[A] = {
-      // println("foldMapT free:"+free)
-      // val t1 = System.currentTimeMillis()
       free.toView match {
         case Pure(a)   => Trampoline.done(a)
         case Impure(a) => step(f(a).run)
       }
-      // val t2 = System.currentTimeMillis()
-      // println( "For foldMapT the tests took " + formatSeconds( (t2 - t1) /** 0.001*/ ))
     }
 
     step(this)
@@ -114,44 +110,32 @@ object TFree {
   @tailrec def toView[S[_], A](free: TFree[S, A])(
     implicit F: Functor[S], TS: TSequence[TFingerTree]
   ): TFreeView[S, A] = {
-    // println("TOVIEW FREE:" + free)
 
     free match {
       case f:FM[S, x, A] => f.head match {
         case Pure(x) =>
-          // println("TOVIEW PURE " + x)
           TS.tviewl[({ type l[X, Y] = FC[S, X, Y] })#l, x, A](f.tail) match {
             case _: TViewl.EmptyL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, x] => 
-              // println("TOVIEW EmptyL")
               Pure(x)
 
             case l: TViewl.LeafL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, u, v, A] =>
-              // println("TOVIEW NOT Empty "+l)
-              // println("TOVIEW NOT Empty x:"+x)
               toView(
                 l.head(x.asInstanceOf[u]) match {
                   case f2: FM[S, x, v] =>
-                    val r2 = FM(
+                    FM(
                       f2.head,
                       TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, x, v, A](f2.tail, l.tail)
                     )
-
-                    // println("TOVIEW NOT Empty IN "+r2)
-                    r2
                 }
               )
           }
         case Impure(a) =>
-          // println("TOVIEW IMPURE")
           Impure(F.map(a){
             case f2: FM[S, y, x] =>
-              // println("TOVIEW IMPURe MAP")
               FM(f2.head, TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, y, x, A](f2.tail, f.tail))
           })
       }
     }
-
-    // println("TOVIEW RET:"+r)
   }
 
   implicit def TFreeMonad[S[_]](
@@ -181,11 +165,12 @@ object TFree {
     def done[A](a: A): Trampoline[A] =
       TFree.fromView(TFreeView.Pure[Function0, A](a))
 
-    // def delay[A](a: => A): Trampoline[A] =
-    //   suspend(done(a))
+    def delay[A](a: => A): Trampoline[A] =
+       suspend(done(a))
 
-    // def suspend[A](a: => Trampoline[A]): Trampoline[A] =
-    //   Free.Suspend[Function0, A](() => a)
+    def suspend[A](a: => Trampoline[A]): Trampoline[A] =
+      TFree.fromView(TFreeView.Impure[Function0, A](() => a))
+
   }
 }
 

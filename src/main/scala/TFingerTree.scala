@@ -71,11 +71,6 @@ object Digit {
     case _ => sys.error("impossible case")
   }
 
-  // def fromList[R[_, _], A, B, C, D, E](l: R[A, B] :: R[B, C] :: R[C, D] :: R[D, E] :: HNil) = Four(l(0), l(1), l(2), l(3))
-  // def fromList[R[_, _], A, B, C, D](l: R[A, B] :: R[B, C] :: R[C, D] :: HNil) = Three(l(0), l(1), l(2))
-  // def fromList[R[_, _], A, B, C](l: R[A, B] :: R[B, C] :: HNil) = Two(l(0), l(1))
-  // def fromList[R[_, _], A, B](l: R[A, B] :: HNil) = One(l(0))
-
   def toList[R[_, _], A, B](d: Digit[R, A, B]) = d match {
     case One(a1)              => :::(a1, ZNil[R, B]())
     case Two(a1, a2)          => :::(a1, :::(a2, ZNil[R, B]()))

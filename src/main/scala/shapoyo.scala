@@ -96,17 +96,17 @@ object Shapoyo {
     def apply[C[_] <: Coproduct] = new Copoyo[C]
   }
 
-  class Program[C[_] <: Coproduct] {
-    type Copro[A]  = C[A]
-    type Copoyo[A] = Coyoneda[Copro, A]
+  // class Program[C[_] <: Coproduct] {
+  //   type Copro[A]  = C[A]
+  //   type Copoyo[A] = Coyoneda[Copro, A]
 
-    implicit def CopoyoApp[F[_], A](f: F[A])(implicit inj: Inject[C[A], F[A]]) = Copoyo[C](f)
+  //   implicit def CopoyoApp[F[_], A](f: F[A])(implicit inj: Inject[C[A], F[A]]) = Copoyo[C](f)
 
-    def exec[Out](interpreters: Copro ~> Id)(implicit instructions: Free.FreeC[Copro, Out]): Free[Id, Out] = {
-      val is: Copoyo ~> Id = liftCoyoLeft(interpreters)
-      instructions.mapSuspension(is)
-    }
-  }
+  //   def exec[Out](interpreters: Copro ~> Id)(implicit instructions: Free.FreeC[Copro, Out]): Free[Id, Out] = {
+  //     val is: Copoyo ~> Id = liftCoyoLeft(interpreters)
+  //     instructions.mapSuspension(is)
+  //   }
+  // }
 
   /** Suspends a value within a functor in a single step. */
   def liftF[S[_], A](value: => S[A])(implicit S: Functor[S]): TFree[S, A] =
