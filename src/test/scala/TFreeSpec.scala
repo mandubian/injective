@@ -153,8 +153,8 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
 
-    testTime("TFree 1000") { println(testQuadratic(1000)) }
-    testTime("TFree 10000") { println(testQuadratic(10000)) }
+    // testTime("TFree 1000") { println(testQuadratic(1000)) }
+    // testTime("TFree 10000") { println(testQuadratic(10000)) }
     // testTime("TFree 20000") { println(testQuadratic(20000)) }
     // testTime("TFree 30000") { println(testQuadratic(30000)) }
     // testTime("TFree 40000") { println(testQuadratic(40000)) }
@@ -164,7 +164,7 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("TFree 300000") { println(testQuadratic(300000)) }
     // testTime("TFree 400000") { println(testQuadratic(400000)) }
     // testTime("TFree 500000") { println(testQuadratic(500000)) }
-    // testTime("TFree 1000000") { println(testQuadratic(1000000)) }
+    testTime("TFree 1000000") { println(testQuadratic(1000000)) }
     // testTime("TFree 2000000") { println(testQuadratic(2000000)) }
     // testTime("TFree 3000000") { println(testQuadratic(3000000)) }
     // testTime("TFree 4000000") { println(testQuadratic(4000000)) }
@@ -173,14 +173,16 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 
+
+/*
   "Free" should "compile" in {
     import FreeTest._
     import It._
 
     def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
 
-    testTime("Free 1000") { println(testQuadratic(1000)) }
-    testTime("Free 10000") { println(testQuadratic(10000)) }
+    // testTime("Free 1000") { println(testQuadratic(1000)) }
+    // testTime("Free 10000") { println(testQuadratic(10000)) }
     // testTime("Free 20000") { println(testQuadratic(20000)) }
     // testTime("Free 30000") { println(testQuadratic(30000)) }
     // testTime("Free 40000") { println(testQuadratic(40000)) }
@@ -190,12 +192,13 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("Free 300000") { println(testQuadratic(300000)) }
     // testTime("Free 400000") { println(testQuadratic(400000)) }
     // testTime("Free 500000") { println(testQuadratic(500000)) }
-    // testTime("Free 1000000") { println(testQuadratic(1000000)) }
-    // testTime("Free 2000000") { println(testQuadratic(2000000)) }
-    // testTime("Free 3000000") { println(testQuadratic(3000000)) }
-    // testTime("Free 4000000") { println(testQuadratic(4000000)) }
+    testTime("Free 1000000") { println(testQuadratic(1000000)) }
+    testTime("Free 2000000") { println(testQuadratic(2000000)) }
+    testTime("Free 3000000") { println(testQuadratic(3000000)) }
+    testTime("Free 4000000") { println(testQuadratic(4000000)) }
     // testTime("Free 5000000") { println(testQuadratic(5000000)) }
     // testTime("Free 10000000") { println(testQuadratic(10000000)) }
 
   }
+*/
 }

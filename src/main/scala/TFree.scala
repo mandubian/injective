@@ -8,8 +8,8 @@ import annotation.tailrec
 
 trait TSequence[S[_[_, _], _, _]] {
   def tempty[C[_, _], X]: S[C, X, X]
-  def tsingleton[C[_, _], X, Y](c: => C[X, Y]): S[C, X, Y]
-  def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: => S[C, Y, Z]): S[C, X, Z]
+  def tsingleton[C[_, _], X, Y](c: C[X, Y]): S[C, X, Y]
+  def tappend[C[_, _], X, Y, Z](a: S[C, X, Y], b: S[C, Y, Z]): S[C, X, Z]
   def tviewl[C[_, _], X, Y](s: S[C, X, Y]): TViewl[S, C, X, Y]
 }
 
@@ -19,11 +19,6 @@ object TViewl {
   case class EmptyL[S[_[_, _], _, _], C[_, _], X]() extends TViewl[S, C, X, X]
 
   case class LeafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: C[X, Y], tail: S[C, Y, Z]) extends TViewl[S, C, X, Z]
-
-  def leafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: C[X, Y], tail: => S[C, Y, Z]) = {
-    lazy val tailz = tail
-    LeafL(head, tailz)
-  }
 }
 
 
@@ -40,14 +35,14 @@ sealed trait TFree[S[_], A] {
   import poly.~>
 
   def toView(implicit F: Functor[S], TS: TSequence[TFingerTree]): TFreeView[S, A] = TFree.toView(this)
+  
+  val M = TFreeMonad[S]
 
   def map[B](f: A => B): TFree[S, B] = {
-    val M = TFreeMonad[S]
     M.bind(this)( (a:A) => M.point(f(a)) )
   }
 
   def flatMap[B](f: A => TFree[S, B]): TFree[S, B] = {
-    val M = TFreeMonad[S]
     M.bind(this)(f)
   }
 
