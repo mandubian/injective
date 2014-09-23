@@ -276,9 +276,9 @@ object TFingerTree {
   implicit object TFingerTreeSeq extends TSequence[TFingerTree] {
     def tempty[C[_, _], X]: TFingerTree[C, X, X] = TFingerTree.empty[C, X]()
 
-    def tsingleton[C[_, _], X, Y](c: C[X, Y]): TFingerTree[C, X, Y] = TFingerTree.single[C, X, Y](c)
+    def tsingleton[C[_, _], X, Y](c: => C[X, Y]): TFingerTree[C, X, Y] = TFingerTree.single[C, X, Y](c)
 
-    def tappend[C[_, _], X, Y, Z](a: TFingerTree[C, X, Y], b: TFingerTree[C, Y, Z]): TFingerTree[C, X, Z] = {
+    def tappend[C[_, _], X, Y, Z](a: TFingerTree[C, X, Y], b: => TFingerTree[C, Y, Z]): TFingerTree[C, X, Z] = {
       app2(a, b)
     }
 
