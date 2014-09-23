@@ -200,7 +200,7 @@ object FreeZTest {
 
 class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 
-/*
+
   "TFree" should "compile" in {
     import TFreeTest._
     import It._
@@ -226,8 +226,8 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("TFree 10000000") { println(testQuadratic(10000000)) }
 
   }
-*/
 
+/*
   "FreeZ" should "compile" in {
     import FreeZTest._
     import It._
@@ -253,7 +253,7 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("TFree 10000000") { println(testQuadratic(10000000)) }
 
   }
-
+*/
 
 /*
   "Free" should "compile" in {
