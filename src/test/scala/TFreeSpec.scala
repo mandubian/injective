@@ -218,12 +218,12 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("TFree 300000") { println(testQuadratic(300000)) }
     // testTime("TFree 400000") { println(testQuadratic(400000)) }
     // testTime("TFree 500000") { println(testQuadratic(500000)) }
-    testTime("TFree 1000000") { println(testQuadratic(1000000)) }
+    // testTime("TFree 1000000") { println(testQuadratic(1000000)) }
     // testTime("TFree 2000000") { println(testQuadratic(2000000)) }
     // testTime("TFree 3000000") { println(testQuadratic(3000000)) }
     // testTime("TFree 4000000") { println(testQuadratic(4000000)) }
-    // testTime("TFree 5000000") { println(testQuadratic(5000000)) }
-    // testTime("TFree 10000000") { println(testQuadratic(10000000)) }
+    testTime("TFree 5000000") { println(testQuadratic(5000000)) }
+    testTime("TFree 10000000") { println(testQuadratic(10000000)) }
 
   }
 

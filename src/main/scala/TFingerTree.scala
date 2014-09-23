@@ -20,7 +20,6 @@ sealed abstract class Digit[R[_, _], A, B] {
 }
 
 object Digit {
-  // TODO ADD FCT BY_VAL TO BY_NAME
   case class One[R[_, _], A, B](a1: R[A, B]) extends Digit[R, A, B]
   case class Two[R[_, _], A, B, C](a1: R[A, B], a2: R[B, C]) extends Digit[R, A, C]
   case class Three[R[_, _], A, B, C, D](a1: R[A, B], a2: R[B, C], a3: R[C, D]) extends Digit[R, A, D]
