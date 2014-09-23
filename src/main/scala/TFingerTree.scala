@@ -288,9 +288,9 @@ object TFingerTree {
         case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](t.a, TFingerTree.empty[C, Y]())
         case t: Deep[C, X, u, v, Y] =>
           Digit.toList(t.prefix) match {
-            case hh ::: tt => 
+            case hh ::: tt =>
               TViewl.LeafL(
-                hh, 
+                hh,
                 TFingerTree.deepL(tt, t.middle, t.suffix)
               )
           }

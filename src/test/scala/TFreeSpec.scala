@@ -144,16 +144,70 @@ object FreeTest {
 }
 
 
+object FreeZTest {
+  import FreeZ._
+  import FreeZView._
+
+  type It[I, A] = FreeZ[({ type l[T] = Get[I, T]})#l, A]
+
+  object It {
+    implicit def Monad[S[_], I]: Monad[({ type l[X] = It[I, X] })#l] = FreeZMonad[({ type l[T] = Get[I, T]})#l]
+  }
+
+  def get[I](implicit M: Monad[({ type l[X] = It[I, X] })#l]) : It[I, I] = {
+    import It._
+
+    type Get0[T] = ({ type l[T] = Get[I, T]})#l[T]
+
+    fromView[Get0, I](
+      Impure[Get0, I](
+        Get( (i:I) => M.point(i) )
+      )
+    )
+  }
+
+  def addGet(i: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
+    get[Int] map { x => x + i }
+  }
+
+  def addNbad(n: Int)(implicit M: Monad[({ type l[X] = It[Int, X] })#l]): It[Int, Int] = {
+    //Seq.fill(n)(addGet _).foldLeft(M.point[Int](0)){ case (acc, f) => M.bind(acc)(f) }
+
+    @tailrec def step(i: Int, it: It[Int, Int]): It[Int, Int] = {
+      if(i < n) step(i+1, M.bind(it)(addGet _)) else it
+    }
+
+    step(0, M.point[Int](0))
+
+  }
+
+  def feedAll[I, A](it: It[I, A])(l: Seq[I])(implicit M: Monad[({ type l[X] = It[I, X] })#l]): Option[A] = {
+    @tailrec def step(it: It[I, A])(l: Seq[I]): Option[A] = {
+      it.toView match {
+        case t: Pure[({ type l[T] = Get[I, T]})#l, a]   => Some(t.a)
+        case t: Impure[({ type l[T] = Get[I, T]})#l, a] =>
+          l match {
+            case Nil    => None
+            case h +: l => step(t.a.f(h))(l)
+          }
+      }
+    }
+
+    step(it)(l)
+  }
+}
+
+
 class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 
-
+/*
   "TFree" should "compile" in {
     import TFreeTest._
     import It._
 
     def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
 
-    // testTime("TFree 1000") { println(testQuadratic(1000)) }
+    testTime("TFree 1000") { println(testQuadratic(1000)) }
     // testTime("TFree 10000") { println(testQuadratic(10000)) }
     // testTime("TFree 20000") { println(testQuadratic(20000)) }
     // testTime("TFree 30000") { println(testQuadratic(30000)) }
@@ -165,6 +219,33 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("TFree 400000") { println(testQuadratic(400000)) }
     // testTime("TFree 500000") { println(testQuadratic(500000)) }
     testTime("TFree 1000000") { println(testQuadratic(1000000)) }
+    // testTime("TFree 2000000") { println(testQuadratic(2000000)) }
+    // testTime("TFree 3000000") { println(testQuadratic(3000000)) }
+    // testTime("TFree 4000000") { println(testQuadratic(4000000)) }
+    // testTime("TFree 5000000") { println(testQuadratic(5000000)) }
+    // testTime("TFree 10000000") { println(testQuadratic(10000000)) }
+
+  }
+*/
+
+  "FreeZ" should "compile" in {
+    import FreeZTest._
+    import It._
+
+    def testQuadratic(n: Int) = feedAll(addNbad(n))(1 to n)
+
+    // testTime("FreeZ 1000") { println(testQuadratic(1000)) }
+    // testTime("TFree 10000") { println(testQuadratic(10000)) }
+    // testTime("TFree 20000") { println(testQuadratic(20000)) }
+    // testTime("TFree 30000") { println(testQuadratic(30000)) }
+    // testTime("TFree 40000") { println(testQuadratic(40000)) }
+    // testTime("TFree 50000") { println(testQuadratic(50000)) }
+    // testTime("TFree 100000") { println(testQuadratic(100000)) }
+    // testTime("TFree 200000") { println(testQuadratic(200000)) }
+    // testTime("TFree 300000") { println(testQuadratic(300000)) }
+    // testTime("TFree 400000") { println(testQuadratic(400000)) }
+    // testTime("TFree 500000") { println(testQuadratic(500000)) }
+    testTime("FreeZ 1000000") { println(testQuadratic(1000000)) }
     // testTime("TFree 2000000") { println(testQuadratic(2000000)) }
     // testTime("TFree 3000000") { println(testQuadratic(3000000)) }
     // testTime("TFree 4000000") { println(testQuadratic(4000000)) }
