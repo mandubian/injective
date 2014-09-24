@@ -20,3 +20,8 @@ resolvers ++= Seq(
 
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-Xlog-implicits")
+
+fork in test := true
+
+javaOptions in test += "-Xmx4G"
+
