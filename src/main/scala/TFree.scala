@@ -35,7 +35,7 @@ sealed trait TFree[S[_], A] {
   import poly.~>
 
   def toView(implicit F: Functor[S], TS: TSequence[TFingerTree]): TFreeView[S, A] = TFree.toView(this)
-  
+
   val M = TFreeMonad[S]
 
   def map[B](f: A => B): TFree[S, B] = {
