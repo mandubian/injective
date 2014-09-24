@@ -77,13 +77,13 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     //(a flatMap (b flatMap (c flatMap (...))))
     def lftBind(n: Int) = {
-      (1 to n).foldLeft(gen(0)){ case (acc, i) => acc flatMap { a => gen(i) } }
-      // @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
-      //   if(i < n) step(i+1, free flatMap { a => gen(i) })
-      //   else free
-      // }
+      // (1 to n).foldLeft(gen(0)){ case (acc, i) => acc flatMap { a => gen(i) } }
+      @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
+        if(i <= n) step(i+1, free flatMap { a => gen(i) })
+        else free
+      }
 
-      // step(0, gen(0))
+      step(0, gen(0))
     }
 
     // (... flatMap (_ => c flatMap (_ => b flatMap (_ => a))))
@@ -102,8 +102,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       // 100000, 200000, 300000, 500000, 800000,
       // 1000000, 2000000, 3000000, 5000000,
       // 10000000, 15000000
-      20000000,
-      30000000
+      19000000
     )
 
     testN foreach { n =>
