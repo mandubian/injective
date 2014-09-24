@@ -167,6 +167,9 @@ object TFree {
       TFree.fromView(TFreeView.Impure[Function0, A](() => a))
 
   }
+
+  type Source[A, B] = TFree[({type f[x] = (A, x)})#f, B]
+
 }
 
 

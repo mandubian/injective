@@ -198,10 +198,10 @@ object FreeZTest {
 }
 
 
-class TFreeSpec extends FlatSpec with Matchers with Instrumented {
+class IterateeSpec extends FlatSpec with Matchers with Instrumented {
 
 
-  "TFree" should "compile" in {
+  "TFree Iteratee" should "work" in {
     import TFreeTest._
     import It._
 
@@ -228,7 +228,7 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
   }
 
 /*
-  "FreeZ" should "compile" in {
+  "FreeZ Iteratee" should "work" in {
     import FreeZTest._
     import It._
 
@@ -256,7 +256,7 @@ class TFreeSpec extends FlatSpec with Matchers with Instrumented {
 */
 
 /*
-  "Free" should "compile" in {
+  "Free Iteratee" should "Iteratee" in {
     import FreeTest._
     import It._
 
