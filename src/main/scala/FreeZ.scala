@@ -1,7 +1,7 @@
 import annotation.tailrec
 import scalaz.{IndSeq, Functor, Monad, Coyoneda}
 
-
+/*
 sealed abstract class FreeZView[S[_], A]
 
 object FreeZView {
@@ -167,3 +167,5 @@ object FreeZ {
   }
 
 }
+
+*/

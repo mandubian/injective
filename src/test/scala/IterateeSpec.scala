@@ -143,7 +143,7 @@ object FreeTest {
   }
 }
 
-
+/*
 object FreeZTest {
   import FreeZ._
   import FreeZView._
@@ -196,7 +196,7 @@ object FreeZTest {
     step(it)(l)
   }
 }
-
+*/
 
 class IterateeSpec extends FlatSpec with Matchers with Instrumented {
 

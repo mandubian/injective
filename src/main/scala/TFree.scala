@@ -18,7 +18,7 @@ sealed trait TViewl[S[_[_, _], _, _], C[_, _], +X, Y]
 object TViewl {
   case class EmptyL[S[_[_, _], _, _], C[_, _], X]() extends TViewl[S, C, X, X]
 
-  case class LeafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: C[X, Y], tail: S[C, Y, Z]) extends TViewl[S, C, X, Z]
+  case class LeafL[S[_[_, _], _, _], C[_, _], X, Y, Z](head: () => C[X, Y], tail: () => S[C, Y, Z]) extends TViewl[S, C, X, Z]
 }
 
 
@@ -97,7 +97,7 @@ object TFree {
   type FC[F[_], A, B] = A => TFree[F, B]
   type FMExp[F[_], A, B] = TFingerTree[({ type l[X, Y] = FC[F, X, Y] })#l, A, B]
 
-  case class FM[S[_], X, A](head: TFreeView[S, X], tail: FMExp[S, X, A]) extends TFree[S, A]
+  case class FM[S[_], X, A](head: TFreeView[S, X], tail: () => FMExp[S, X, A]) extends TFree[S, A]
 
   def fromView[S[_], A](h: TFreeView[S, A]): TFree[S, A] =
     FM(h, TFingerTree.empty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
@@ -105,21 +105,22 @@ object TFree {
   @tailrec def toView[S[_], A](free: TFree[S, A])(
     implicit F: Functor[S], TS: TSequence[TFingerTree]
   ): TFreeView[S, A] = {
+    type FCS[A, B] = ({ type l[X, Y] = FC[S, X, Y] })#l[A, B]
 
     free match {
       case f:FM[S, x, A] => f.head match {
         case Pure(x) =>
-          TS.tviewl[({ type l[X, Y] = FC[S, X, Y] })#l, x, A](f.tail) match {
-            case _: TViewl.EmptyL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, x] => 
+          TS.tviewl[FCS, x, A](f.tail) match {
+            case _: TViewl.EmptyL[TFingerTree, FCS, x] => 
               Pure(x)
 
-            case l: TViewl.LeafL[TFingerTree, ({ type l[X, Y] = FC[S, X, Y] })#l, u, v, A] =>
+            case l: TViewl.LeafL[TFingerTree, FCS, u, v, A] =>
               toView(
-                l.head(x.asInstanceOf[u]) match {
+                l.head()(x.asInstanceOf[u]) match {
                   case f2: FM[S, x, v] =>
                     FM(
                       f2.head,
-                      TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, x, v, A](f2.tail, l.tail)
+                      TS.tappend[FCS, x, v, A](f2.tail, l.tail())
                     )
                 }
               )
@@ -127,7 +128,7 @@ object TFree {
         case Impure(a) =>
           Impure(F.map(a){
             case f2: FM[S, y, x] =>
-              FM(f2.head, TS.tappend[({ type l[X, Y] = FC[S, X, Y] })#l, y, x, A](f2.tail, f.tail))
+              FM(f2.head, TS.tappend[FCS, y, x, A](f2.tail, f.tail))
           })
       }
     }

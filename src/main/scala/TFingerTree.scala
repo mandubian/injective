@@ -273,7 +273,7 @@ object TFingerTree {
             Digit.toTree(sf).asInstanceOf[TFingerTree[R, A, D]]
 
           case l:LeafL[TFingerTree, TNode, B, u, C] =>
-            deep(l.head.toDigit, l.tail, sf)
+            deep(l.head().toDigit, l.tail(), sf)
         }
 
       case _ => deep(Digit.fromList(pr), m, sf)
@@ -292,11 +292,11 @@ object TFingerTree {
     def tviewl[C[_, _], X, Y](s: TFingerTree[C, X, Y]): TViewl[TFingerTree, C, X, Y] = {
       s match {
         case _:Empty[C, X] => TViewl.EmptyL[TFingerTree, C, X]()
-        case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](t.a, TFingerTree.empty())
+        case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](() => t.a, () => TFingerTree.empty())
         case t: Deep[C, X, u, v, Y] =>
           Digit.toList(t.prefix) match {
             case hh ::: tt =>
-              TViewl.LeafL(hh, TFingerTree.deepL(tt, t.middle, t.suffix))
+              TViewl.LeafL(() => hh, () => TFingerTree.deepL(tt, t.middle, t.suffix))
           }
       }
     }

@@ -8,7 +8,7 @@ import Scalaz._
 
 class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
-
+/*
   "Scalaz Free" should "left/right bind" in {
     import Free._
 
@@ -41,16 +41,17 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     val testN = Seq[Int](
-       1000
-      ,100000, 200000, 300000, 500000, 800000
-      ,1000000, 2000000, 3000000, 5000000
+      //  1000
+      // ,100000, 200000, 300000, 500000, 800000
+      // ,1000000, 2000000, 3000000,
+      15000000
       // ,10000000, 15000000
       // ,20000000
     )
 
     testN foreach { n =>
-      testTime(s"Scalaz Free - Left Bind - $n") { lftBind(n).run } should equal (n)
-      testTime(s"Scalaz Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      testTime(s"Scalaz Free - Left Bind - $n") { lftBind(n)/*.run*/ } should equal (n)
+      // testTime(s"Scalaz Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
     }
     // testTime("Scalaz Free - Left  Bind - 1000")     { lftBind(1000).run } should equal     (1000)
     // testTime("Scalaz Free - Left  Bind - 100000")   { lftBind(100000).run } should equal   (100000)
@@ -63,7 +64,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
     // testTime("Scalaz Free - Right Bind - 5000000") { rgtBind(5000000).run } should equal (5000000)
 
   }
-
+*/
 
   "Fixed Free" should "left/right bind" in {
   	import TFree._
@@ -99,8 +100,10 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     val testN = Seq[Int](
       1000
-      ,100000, 200000, 300000, 500000, 800000
-      ,1000000, 2000000, 3000000, 5000000
+      ,
+      1000000
+      //, 200000, 300000, 500000, 800000
+      //,1000000, 2000000, 3000000, 5000000
       // ,10000000, 15000000
       // ,30000000
     )
