@@ -108,7 +108,7 @@ object TFingerTree {
 
   case class Deep[R[_, _], A, B, C, D](
     prefix: Digit[R, A, B],
-    middle: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
+    middle: () => TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     suffix: Digit[R, C, D]
   ) extends TFingerTree[R, A, D]
 
@@ -118,10 +118,10 @@ object TFingerTree {
 
   def deep[R[_, _], A, B, C, D](
     prefix: Digit[R, A, B],
-    middle: TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
+    middle: => TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     suffix: Digit[R, C, D]
   ) = {
-    new Deep[R, A, B, C, D](prefix, middle, suffix)
+    new Deep[R, A, B, C, D](prefix, () => middle, suffix)
   }
 
   def prepend[R[_, _], A, B, C](a: R[A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
@@ -135,12 +135,12 @@ object TFingerTree {
           Two(a, f.a1),
           prepend[TNode, u1, u4, v](
             Node3(f.a2, f.a3, f.a4),
-            t.middle
+            t.middle()
           ),
           t.suffix
         )
 
-        case _ => deep(Digit.appendd(One(a), t.prefix), t.middle, t.suffix)
+        case _ => deep(Digit.appendd(One(a), t.prefix), t.middle(), t.suffix)
 
       }
     }
@@ -153,16 +153,19 @@ object TFingerTree {
       case t: Empty[R, B] => single(a)
       case t: Single[R, A, B] => deep(One(t.a), empty[TNode, B](), One(a))
       case t: Deep[R, A, u, v, B] => t.suffix match {
-        case f: Four[R, u1, u2, u3, u4, B] => deep(
-          t.prefix,
-          append[TNode, u, u1, u4](
-            t.middle,
-            Node3(f.a1, f.a2, f.a3)
-          ),
-          Two[R, u4, B, C](f.a4, a)
-        )
+        case f: Four[R, u1, u2, u3, u4, B] =>
+          val m = t.middle()
+          deep(
+            t.prefix,
+            append[TNode, u, u1, u4](
+              m,
+              Node3(f.a1, f.a2, f.a3)
+            ),
+            Two[R, u4, B, C](f.a4, a)
+          )
 
-        case _ => deep(t.prefix, t.middle, Digit.appendd(t.suffix, One(a)))
+        case _ =>
+          deep(t.prefix, t.middle(), Digit.appendd(t.suffix, One(a)))
 
       }
     }
@@ -222,11 +225,11 @@ object TFingerTree {
           case t22: Deep[R, C, w, x, D]   => deep(
             t11.prefix,
             app3[TNode, u, v, w, x](
-              t11.middle,
+              t11.middle(),
               nodes(
                 Digit.toList(t11.suffix) append (l append Digit.toList(t22.prefix))
               ),
-              t22.middle
+              t22.middle()
             ),
             t22.suffix
           )
@@ -247,9 +250,9 @@ object TFingerTree {
         case t22: Deep[R, B, w, x, C] => deep(
           t11.prefix,
           app3[({ type N[U, V] = Node[R, U, V] })#N, u, v, w, x](
-            t11.middle,
+            t11.middle(),
             nodes( Digit.toList(t11.suffix) append Digit.toList(t22.prefix) ),
-            t22.middle
+            t22.middle()
           ),
           t22.suffix
         )
@@ -273,7 +276,7 @@ object TFingerTree {
             Digit.toTree(sf).asInstanceOf[TFingerTree[R, A, D]]
 
           case l:LeafL[TFingerTree, TNode, B, u, C] =>
-            deep(l.head().toDigit, l.tail(), sf)
+            deep(l.head.toDigit, l.tail(), sf)
         }
 
       case _ => deep(Digit.fromList(pr), m, sf)
@@ -289,14 +292,14 @@ object TFingerTree {
       app2(a, b)
     }
 
-    def tviewl[C[_, _], X, Y](s: TFingerTree[C, X, Y]): TViewl[TFingerTree, C, X, Y] = {
+    def tviewl[C[_, _], X, Y](s: => TFingerTree[C, X, Y]): TViewl[TFingerTree, C, X, Y] = {
       s match {
         case _:Empty[C, X] => TViewl.EmptyL[TFingerTree, C, X]()
-        case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](() => t.a, () => TFingerTree.empty())
+        case t: Single[C, X, Y] => TViewl.LeafL[TFingerTree, C, X, Y, Y](t.a, () => TFingerTree.empty())
         case t: Deep[C, X, u, v, Y] =>
           Digit.toList(t.prefix) match {
             case hh ::: tt =>
-              TViewl.LeafL(() => hh, () => TFingerTree.deepL(tt, t.middle, t.suffix))
+              TViewl.LeafL(hh, () => TFingerTree.deepL(tt, t.middle(), t.suffix))
           }
       }
     }
