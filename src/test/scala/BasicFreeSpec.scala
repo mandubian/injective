@@ -8,7 +8,7 @@ import Scalaz._
 
 class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
-/*
+
   "Scalaz Free" should "left/right bind" in {
     import Free._
 
@@ -31,7 +31,8 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     // (... flatMap (_ => c flatMap (_ => b flatMap (_ => a))))
     def rgtBind(n: Int) = {
-      (1 to n).foldRight(gen(n)){ case (i, acc) => gen(i) flatMap { a => acc } }
+      (1 to n).foldLeft(gen(n)){ case (acc, i) => gen(n-i) flatMap { _ => acc } }
+      // (1 to n).foldRight(gen(n)){ case (i, acc) => gen(i) flatMap { a => acc } }
       // @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
       //   if(i > 0) step(i-1, gen(i) flatMap { _ => free })
       //   else free
@@ -41,32 +42,26 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     val testN = Seq[Int](
-      //  1000
-      // ,100000, 200000, 300000, 500000, 800000
-      // ,1000000, 2000000, 3000000,
-      15000000
-      // ,10000000, 15000000
-      // ,20000000
+      1000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000, 18000000
+      , 20000000, 30000000, 40000000  //, 50000000
     )
 
-    testN foreach { n =>
-      testTime(s"Scalaz Free - Left Bind - $n") { lftBind(n)/*.run*/ } should equal (n)
-      // testTime(s"Scalaz Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
-    }
-    // testTime("Scalaz Free - Left  Bind - 1000")     { lftBind(1000).run } should equal     (1000)
-    // testTime("Scalaz Free - Left  Bind - 100000")   { lftBind(100000).run } should equal   (100000)
-    // testTime("Scalaz Free - Left  Bind - 1000000")  { lftBind(1000000).run } should equal  (1000000)
-    // testTime("Scalaz Free - Left  Bind - 10000000") { lftBind(10000000).run } should equal (10000000)
 
-    // testTime("Scalaz Free - Right Bind - 1000")     { rgtBind(1000).run } should equal      (1000)
-    // testTime("Scalaz Free - Right Bind - 100000")   { rgtBind(100000).run } should equal   (100000)
-    // testTime("Scalaz Free - Right Bind - 1000000")  { rgtBind(1000000).run } should equal  (1000000)
-    // testTime("Scalaz Free - Right Bind - 5000000") { rgtBind(5000000).run } should equal (5000000)
+
+    testN foreach { n =>
+      // testTime(s"Scalaz Free - Left Bind - $n") { lftBind(n).run } should equal (n)
+      testTime(s"Scalaz Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+    }
 
   }
-*/
 
-  "Fixed Free" should "left/right bind" in {
+
+/*
+  "Strict Fixed Free" should "left/right bind" in {
+    import strict._
   	import TFree._
     import TFreeView._
 
@@ -89,7 +84,8 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     // (... flatMap (_ => c flatMap (_ => b flatMap (_ => a))))
     def rgtBind(n: Int) = {
-      (1 to n).foldRight(gen(n)){ case (i, acc) => gen(i) flatMap { a => acc } }
+      (1 to n).foldLeft(gen(n)){ case (acc, i) => gen(n-i) flatMap { _ => acc } }
+      // (1 to n).foldRight(gen(n)){ case (i, acc) => gen(i) flatMap { a => acc } }
       // @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
       //   if(i > 0) step(i-1, gen(i) flatMap { _ => free })
       //   else free
@@ -100,33 +96,71 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     val testN = Seq[Int](
       1000
-      ,
-      5000000
-      //, 200000, 300000, 500000, 800000
-      //,1000000, 2000000, 3000000, 5000000
-      // ,10000000, 15000000
-      // ,30000000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000, 18000000
+      , 10000000, 20000000, 30000000, 40000000  //, 50000000
+    )
+
+
+    testN foreach { n =>
+      testTime(s"Strict Fixed Free - Left Bind  - $n") { lftBind(n).run } //should equal (n)
+      // testTime(s"Strict Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+    }
+
+  }
+*/
+/*
+  "Lazy Fixed Free" should "left/right bind" in {
+    import `lazy`._
+    import TFree._
+    import TFreeView._
+
+    //val M = TFreeMonad[Function0]
+
+    def gen[I](i: I): Trampoline[I] = {
+      fromView(Impure[Function0, I]( () => Trampoline.done(i) ))
+    }
+
+    //(a flatMap (b flatMap (c flatMap (...))))
+    def lftBind(n: Int) = {
+      (1 to n).foldLeft(gen(0)){ case (acc, i) => acc flatMap { a => gen(i) } }
+      // @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
+      //   if(i <= n) step(i+1, free flatMap { a => gen(i) })
+      //   else free
+      // }
+
+      // step(0, gen(0))
+    }
+
+    // def foldRight[A, B](l: Seq[A], f: (A, B) => B): B = {
+
+    // }
+
+    // (... flatMap (_ => c flatMap (_ => b flatMap (_ => a))))
+    def rgtBind(n: Int) = {
+      (1 to n).foldLeft(gen(n)){ case (acc, i) => gen(n-i) flatMap { _ => acc } }
+      // @tailrec def step(i: Int, free: Trampoline[Int]): Trampoline[Int] = {
+      //   if(i > 0) step(i-1, gen(i) flatMap { _ => free })
+      //   else free
+      // }
+
+      // step(n, gen(n))
+    }
+
+    val testN = Seq[Int](
+      1000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000, 18000000
+      //, 18000000  //, 20000000 //, 30000000 //, 40000000 //, 50000000
     )
 
     testN foreach { n =>
-      try {
-        testTime(s"Fixed Free - Left Bind  - $n") { lftBind(n) } //should equal (n)
-      } catch {
-        case ex: Throwable => ex.printStackTrace
-      }
-      // testTime(s"Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      testTime(s"Lazy Fixed Free - Left Bind  - $n") { lftBind(n).run } should equal (n)
+      testTime(s"Lazy Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
     }
 
-    // testTime("Fixed Free - Left  Bind - 1000")     { lftBind(1000).run } should equal     (1000)
-    // testTime("Fixed Free - Left  Bind - 100000")   { lftBind(100000).run } should equal   (100000)
-    // testTime("Fixed Free - Left  Bind - 1000000")  { lftBind(1000000).run } should equal  (1000000)
-    // testTime("Fixed Free - Left  Bind - 10000000") { lftBind(10000000).run } should equal (10000000)
-
-    // testTime("Fixed Free - Right Bind - 1000")     { rgtBind(1000).run } should equal      (1000)
-    // testTime("Fixed Free - Right Bind - 100000")   { rgtBind(100000).run } should equal   (100000)
-    // testTime("Fixed Free - Right Bind - 1000000")  { rgtBind(1000000).run } should equal  (1000000)
-    // testTime("Fixed Free - Right Bind - 10000000") { rgtBind(10000000).run } should equal (10000000)
-
   }
-
+*/
 }

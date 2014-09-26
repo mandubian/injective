@@ -74,6 +74,7 @@ object Interpreters {
   // }
 
   import scalaz.{Free, Trampoline}
+  import strict.TFree
 
   // object File2 extends (FileSystem ~> Free.Trampoline) {
   //   val l = Seq.fill(100000)("tata")

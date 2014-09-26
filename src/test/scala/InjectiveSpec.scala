@@ -9,6 +9,8 @@ import scalaz.{Free, Coyoneda}
 
 import scala.concurrent._
 
+import strict._
+
 /*class InjectiveSpec extends FlatSpec with Matchers {
 
   "Injective" should "run the app" in {

@@ -1,3 +1,5 @@
+package core
+
 sealed trait TViewl[S[_[_, _], _, _], C[_, _], +X, Y]
 
 object TViewl {

@@ -10,6 +10,8 @@ import Scalaz._
 
 import scala.annotation.tailrec
 
+import strict._
+
 case class Get[I, A](f: I => A)
 
 object Get {

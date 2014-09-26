@@ -12,8 +12,9 @@ import shapeless.test._
 import scala.collection.{ GenTraversable, GenTraversableLike }
 import scala.collection.generic.CanBuildFrom
 
-import nl.grons.metrics.scala._
+// import nl.grons.metrics.scala._
 
+import strict._
 
 class TFingerTreeSpec extends FlatSpec with Matchers{
   import shapeless._
@@ -37,13 +38,13 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
     val f2 = (d:Float) => d.toInt
 
     val t3 = prepend(f2, t2)
-    t3 should equal (Deep(One(f2), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f)))
+    t3 should equal (Deep(One(f2), Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f)))
     println("T3: " + t3)
 
     val f3 = (d:Double) => d.toFloat
 
     val t4 = prepend(f3, t3)
-    t4 should equal (Deep(Two(f3, f2), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f)))
+    t4 should equal (Deep(Two(f3, f2), Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f)))
     println("T4: " + t4)
 
   }
@@ -63,13 +64,13 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
     val f2 = (i:Float) => i.toInt
 
     val t3 = append(t2, f2)
-    t3 should equal (Deep(One(f), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), One(f2)))
+    t3 should equal (Deep(One(f), Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), One(f2)))
     println("T3: " + t3)
 
     val f3 = (i:Int) => i.toString
 
     val t4 = append(t3, f3)
-    t4 should equal (Deep(One(f), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), Two(f2, f3)))
+    t4 should equal (Deep(One(f), Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), Two(f2, f3)))
     println("T4: " + t4)
   }
 
@@ -87,7 +88,7 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
     val l = :::(f1, :::(f2, :::(f3, ZNil[R, String]())))
 
     val t2 = TFingerTree.addAllL(l, t)
-    t2 should equal (Deep(Two(f1, f2), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f3)))
+    t2 should equal (Deep(Two(f1, f2), Empty[({ type N[U, V] = Node[R, U, V] })#N, Int](), One(f3)))
 
     println("T2:"+t2)
 
@@ -106,7 +107,7 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
     val l = :::(f1, :::(f2, :::(f3, ZNil[R, String]())))
 
     val t2 = TFingerTree.addAllR(t, l)
-    t2 should equal (Deep(One(f1), () => Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), Two(f2, f3)))
+    t2 should equal (Deep(One(f1), Empty[({ type N[U, V] = Node[R, U, V] })#N, Float](), Two(f2, f3)))
 
     println("T2:"+t2)
 
@@ -132,7 +133,7 @@ class TFingerTreeSpec extends FlatSpec with Matchers{
     t3 should equal (
       Deep(
         Two(f0, f1),
-        () => TFingerTree.single[({ type N[U, V] = Node[R, U, V] })#N, Float, String](Node.Node3(f2, f3, f4)),
+        TFingerTree.single[({ type N[U, V] = Node[R, U, V] })#N, Float, String](Node.Node3(f2, f3, f4)),
         One(f5)
       )
     )

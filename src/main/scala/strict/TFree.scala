@@ -1,11 +1,8 @@
-import scalaz._
-import Scalaz._
+package `lazy`
 
-import shapeless._
-import poly._
 
 import annotation.tailrec
-
+import core._
 
 sealed abstract class TFreeView[S[_], A]
 
@@ -17,18 +14,28 @@ object TFreeView {
 sealed trait TFree[S[_], A] {
   import TFree._
   import TFreeView._
-  import poly.~>
+  import scalaz.{Functor, Monad, ~>}
+  import scalaz.std.function._
+  import TFingerTree.TFingerTreeSeq
 
-  def toView(implicit F: Functor[S], TS: TSequence[TFingerTree]): TFreeView[S, A] = TFree.toView(this)
-
-  val M = TFreeMonad[S]
+  def toView(implicit F: Functor[S]): TFreeView[S, A] = TFree.toView(this)
 
   def map[B](f: A => B): TFree[S, B] = {
-    M.bind(this)( (a:A) => M.point(f(a)) )
+    this.flatMap( (a:A) =>  fromView(Pure(f(a))) )
   }
 
   def flatMap[B](f: A => TFree[S, B]): TFree[S, B] = {
-    M.bind(this)(f)
+    type FCS[A, B] = ({ type l[X, Y] = FC[S, X, Y] })#l[A, B]
+    this match {
+      case free: FM[S, x, A] =>
+        FM(
+          free.head,
+          TFingerTreeSeq.tappend[FCS, x, A, B](
+            free.tail,
+            TFingerTreeSeq.tsingleton[FCS, A, B](f)
+          )
+        )
+    }
   }
 
   final def mapSuspension[T[_]](f: S ~> T)(implicit S: Functor[S], T: Functor[T]): TFree[T, A] = {
@@ -76,8 +83,10 @@ sealed trait TFree[S[_], A] {
 
 }
 
-object TFree {
+object TFree extends TCopoyo {
   import TFreeView._
+  import scalaz.{Monad, Functor, Coyoneda}
+  import TFingerTree.TFingerTreeSeq
 
   type FC[F[_], A, B] = A => TFree[F, B]
   type FMExp[F[_], A, B] = TFingerTree[({ type l[X, Y] = FC[F, X, Y] })#l, A, B]
@@ -91,14 +100,14 @@ object TFree {
     FM(h, TFingerTree.empty[({ type l[X, Y] = FC[S, X, Y] })#l, A])
 
   @tailrec def toView[S[_], A](free: TFree[S, A])(
-    implicit F: Functor[S], TS: TSequence[TFingerTree]
+    implicit F: Functor[S]
   ): TFreeView[S, A] = {
     type FCS[A, B] = ({ type l[X, Y] = FC[S, X, Y] })#l[A, B]
 
     free match {
       case f:FM[S, x, A] => f.head match {
         case Pure(x) =>
-          TS.tviewl[FCS, x, A](f.tail) match {
+          TFingerTreeSeq.tviewl[FCS, x, A](f.tail) match {
             case _: TViewl.EmptyL[TFingerTree, FCS, x] =>
               Pure(x)
 
@@ -108,7 +117,7 @@ object TFree {
                   case f2: FM[S, x, v] =>
                     FM(
                       f2.head,
-                      TS.tappend[FCS, x, v, A](f2.tail, l.tail())
+                      TFingerTreeSeq.tappend[FCS, x, v, A](f2.tail, l.tail())
                     )
                 }
               )
@@ -116,31 +125,18 @@ object TFree {
         case Impure(a) =>
           Impure(F.map(a){
             case f2: FM[S, y, x] =>
-              FM(f2.head, TS.tappend[FCS, y, x, A](f2.tail, f.tail))
+              FM(f2.head, TFingerTreeSeq.tappend[FCS, y, x, A](f2.tail, f.tail))
           })
       }
     }
   }
 
-  implicit def TFreeMonad[S[_]](
-    implicit TS: TSequence[TFingerTree]
-  ) = new Monad[({ type l[A] = TFree[S, A] })#l] {
+  implicit def TFreeMonad[S[_]] = new Monad[({ type l[A] = TFree[S, A] })#l] {
 
     def point[A](a: => A): TFree[S, A] = fromView(Pure(a))
 
-    def bind[A, B](fa: TFree[S, A])(f: A => TFree[S, B]): TFree[S, B] = {
-      type FCS[A, B] = ({ type l[X, Y] = FC[S, X, Y] })#l[A, B]
-      fa match {
-        case free: FM[S, x, A] =>
-          FM(
-            free.head,
-            TS.tappend[FCS, x, A, B](
-              free.tail,
-              TS.tsingleton[FCS, A, B](f)
-            )
-          )
-      }
-    }
+    def bind[A, B](fa: TFree[S, A])(f: A => TFree[S, B]): TFree[S, B] = fa flatMap f
+
   }
 
   type TFreeC[S[_], A] = TFree[({type f[x] = Coyoneda[S, x]})#f, A]
@@ -161,6 +157,38 @@ object TFree {
   }
 
   type Source[A, B] = TFree[({type f[x] = (A, x)})#f, B]
+
+}
+
+
+trait TCopoyo {
+  import scalaz.{Coyoneda, Functor, Unapply}
+  import shapeless.ops.coproduct.{Inject, Selector}
+  import shapeless.{Coproduct, Inl, Inr, CNil, :+:, Poly1, Id}
+  import shapeless.poly._
+
+  /** Suspends a value within a functor in a single step. */
+  def liftF[S[_], A](value: => S[A])(implicit S: Functor[S]): TFree[S, A] =
+    TFree.fromView[S, A](TFreeView.Impure[S, A](S.map(value){ v =>
+      TFree.fromView[S, A](TFreeView.Pure[S, A](v))
+    }))
+
+  /** A version of `liftF` that infers the nested type constructor. */
+  def liftFU[MA](value: => MA)(implicit MA: Unapply[Functor, MA]): TFree[MA.M, MA.A] =
+    liftF(MA(value))(MA.TC)
+
+  /** A free monad over a free functor of `S`. */
+  def liftFC[S[_], A](s: S[A]): TFree.TFreeC[S, A] =
+    liftFU(Coyoneda lift s)
+
+  class TCopoyo[C[_] <: Coproduct] {
+    def apply[F[_], A](fa: F[A])(implicit inj: Inject[C[A], F[A]]): TFree.TFreeC[C, A] =
+      liftFC(Coproduct[C[A]](fa))
+  }
+
+  object TCopoyo {
+    def apply[C[_] <: Coproduct] = new TCopoyo[C]
+  }
 
 }
 
