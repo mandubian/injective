@@ -74,7 +74,6 @@ object Interpreters {
   // }
 
   import scalaz.{Free, Trampoline}
-  import strict.TFree
 
   // object File2 extends (FileSystem ~> Free.Trampoline) {
   //   val l = Seq.fill(100000)("tata")
@@ -117,21 +116,35 @@ object Interpreters {
         //Trampoline.done(println(line))
         Trampoline.done { println(i + " " + line); i }
       case Eof =>
-        Trampoline.done(println("EOF "+i))
+        Trampoline.done(())
     }
   }
 
-  def fileInterpreter2(n: Int) = new (FileSystem ~> TFree.Trampoline) {
+  def fileInterpreter2(n: Int) = new (FileSystem ~> strict.TFree.Trampoline) {
     //val l = Seq.fill(n)("tata")
     private var i = 0
     def apply[A](fs: FileSystem[A]) = fs match {
       case ReadLine =>
-        if(i < n) { val r = Some("tata" + "_" + i); i+=1; TFree.Trampoline.done(r) }
-        else TFree.Trampoline.done(None)
+        if(i < n) { val r = Some("tata" + "_" + i); i+=1; strict.TFree.Trampoline.done(r) }
+        else strict.TFree.Trampoline.done(None)
       case PutLine(line) =>
-        TFree.Trampoline.done { println(i + " " + line); i }
+        strict.TFree.Trampoline.done { println(i + " " + line); i }
       case Eof =>
-        TFree.Trampoline.done(println("EOF "+i))
+        strict.TFree.Trampoline.done(())
+    }
+  }
+
+  def fileInterpreter2Lazy(n: Int) = new (FileSystem ~> `lazy`.TFree.Trampoline) {
+    //val l = Seq.fill(n)("tata")
+    private var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < n) { val r = Some("tata" + "_" + i); i+=1; `lazy`.TFree.Trampoline.done(r) }
+        else `lazy`.TFree.Trampoline.done(None)
+      case PutLine(line) =>
+        `lazy`.TFree.Trampoline.done { println(i + " " + line); i }
+      case Eof =>
+        `lazy`.TFree.Trampoline.done(())
     }
   }
 
@@ -150,11 +163,19 @@ object Interpreters {
     }
   }
 
-  object Logger3 extends (LogA ~> TFree.Trampoline) {
+  object Logger3 extends (LogA ~> strict.TFree.Trampoline) {
     def apply[A](a: LogA[A]) = a match {
       case Log(lvl, msg) =>
         //Trampoline.done(println(s"$lvl $msg"))
-        TFree.Trampoline.done(())
+        strict.TFree.Trampoline.done(())
+    }
+  }
+
+  object Logger3Lazy extends (LogA ~> `lazy`.TFree.Trampoline) {
+    def apply[A](a: LogA[A]) = a match {
+      case Log(lvl, msg) =>
+        //Trampoline.done(println(s"$lvl $msg"))
+        `lazy`.TFree.Trampoline.done(())
     }
   }
 

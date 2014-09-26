@@ -9,8 +9,6 @@ import scalaz.{Free, Coyoneda}
 
 import scala.concurrent._
 
-import strict._
-
 /*class InjectiveSpec extends FlatSpec with Matchers {
 
   "Injective" should "run the app" in {
@@ -26,6 +24,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
   import ADT._
   import Interpreters._
 
+/*
   "ShapeApp" should "run 3rd app 1" in {
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
@@ -54,28 +53,22 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
       liftCoyoLeft(interpreters)
     }
 
-    try {
-      //println("RESULT:"+prg.mapSuspension(lis).run)
-      testTime("Scalaz Free 1000") { prg.foldMap(buildInterpreter(1000)).run }
-      // testTime("TFree 2000") { prg.foldMap(buildInterpreter(2000)).run }
-      // testTime("TFree 3000") { prg.foldMap(buildInterpreter(3000)).run }
-      // testTime("TFree 4000") { prg.foldMap(buildInterpreter(4000)).run }
-      // testTime("TFree 5000") { prg.foldMap(buildInterpreter(5000)).run }
-      // testTime("Scalaz Free 10000") { prg.foldMap(buildInterpreter(10000)).run }
-      // testTime("Scalaz Free 20000") { prg.foldMap(buildInterpreter(20000)).run }
-      // testTime("Scalaz Free 30000") { prg.foldMap(buildInterpreter(30000)).run }
-      // testTime("Scalaz Free 40000") { prg.foldMap(buildInterpreter(40000)).run }
-      // testTime("Scalaz Free 50000") { prg.foldMap(buildInterpreter(50000)).run }
-      // testTime("Scalaz Free 100000") { prg.foldMap(buildInterpreter(100000)).run }
-      // testTime("TFree 500000") { prg.foldMap(buildInterpreter(500000)).run }
-      testTime("Scalaz Free 50000") { println("RES:"+prg.foldMap(buildInterpreter(50000)).run) }
-    } catch {
-      case e:Throwable => e.printStackTrace
+    val testN = Seq[Int](
+      1000, 5000
+      , 10000, 20000, 50000
+      , 100000
+    )
+
+    println("Scalaz Free App")
+    testN foreach { n =>
+      testTime2(s"$n") { prg.foldMap(buildInterpreter(n)).run }
     }
+
   }
 
-
-  "ShapeApp" should "run 3rd app TFree" in {
+*/
+  "ShapeApp" should "Strict TFree" in {
+    import strict._
     import TFree._
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
@@ -106,37 +99,65 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
       liftCoyoLeft(interpreters)
     }
 
-    try {
-      testTime("Fixed Free 1000") { prg.foldMapT(buildInterpreter(1000)).run }
-      // testTime("Fixed Free 1000000")  { prg.foldMap(buildInterpreter(1000000)).run }
-      // testTime("Fixed Free 2000000")  { prg.foldMap(buildInterpreter(2000000)).run }
-      // testTime("Fixed Free 3000000")  { prg.foldMap(buildInterpreter(3000000)).run }
-      // testTime("Fixed Free 4000000")  { prg.foldMap(buildInterpreter(4000000)).run }
-      testTime("Fixed Free 50000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(50000)).run) }
-      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMapT")  { println("RES:"+prg.foldMapT(buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 1000000 FoldMap ")  { println("RES:"+prg.foldMap (buildInterpreter(1000000)).run) }
-      // testTime("Fixed Free 10000000") { prg.foldMap(buildInterpreter(10000000)).run }
-      // testTime("Fixed Free 20000000") { prg.foldMap(buildInterpreter(20000000)).run }
-      // testTime("Fixed Free 400000") { prg.foldMapT(buildInterpreter(400000)).run }
-      // testTime("Fixed Free 800000") { prg.foldMapT(buildInterpreter(800000)).run }
-      // testTime("Fixed Free 1000000") { prg.foldMapT(buildInterpreter(1000000)).run }
+    val testN = Seq[Int](
+      // 1000, 5000
+      // , 10000, 20000, 50000
+      // , 100000
+      100000000
+    )
 
-    } catch {
-      case e:Throwable => e.printStackTrace
+    println("Strict Fixed Free App")
+    testN foreach { n =>
+      testTime2(s"$n") { prg.foldMap(buildInterpreter(n)).run }
     }
+
   }
 
 
+"ShapeApp" should "Lazy TFree" in {
+    import `lazy`._
+    import TFree._
+    // APP DEFINITION
+    type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
+    type CoyoApp[A] = Coyoneda[App, A]
+    type TFreeApp[A] = TFree.TFreeC[App, A]
 
+    // THE PROGRAM
+    def prg: TFreeApp[Unit] =
+      // for {
+      //   line <- TCopoyo[App](ReadLine)
+      // //   // _ <- TCopoyo[App](Log(InfoLevel, "read "+line))
+      //   _ <- line match {
+      //           case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
+      //           case None       => TCopoyo[App](Eof)
+      //         }
+      // } yield ()
+      TCopoyo[App](ReadLine) flatMap {
+        case Some(line) => prg //TCopoyo[App](PutLine(line)) flatMap ( _ => prg )
+        case None       => TCopoyo[App](Eof)
+      } //map { _ => () }
+
+
+    // val interpreters: App ~> Free.Trampoline = File2 ||: Logger2
+    // val lis: CoyoApp ~> Free.Trampoline = liftCoyoLeft(interpreters)
+
+    def buildInterpreter(n: Int): CoyoApp ~> TFree.Trampoline = {
+      def interpreters: App ~> TFree.Trampoline = fileInterpreter2Lazy(n) ||: Logger3Lazy
+      liftCoyoLeft(interpreters)
+    }
+
+    val testN = Seq[Int](
+      // 1000, 5000
+      // , 10000, 20000, 50000
+      100000000
+    )
+
+    println("Lazy Fixed Free App")
+    testN foreach { n =>
+      testTime2(s"$n") { prg.foldMap(buildInterpreter(n)).run }
+    }
+
+  }
 
 
 
