@@ -110,7 +110,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
     testN foreach { n =>
       try {
-        testTime(s"Fixed Free - Left Bind  - $n") { lftBind(n).run } //should equal (n)
+        testTime(s"Fixed Free - Left Bind  - $n") { lftBind(n) } //should equal (n)
       } catch {
         case ex: Throwable => ex.printStackTrace
       }
