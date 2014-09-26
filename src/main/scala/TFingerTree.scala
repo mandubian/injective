@@ -121,7 +121,8 @@ object TFingerTree {
     middle: => TFingerTree[({ type N[U, V] = Node[R, U, V] })#N, B, C],
     suffix: Digit[R, C, D]
   ) = {
-    new Deep[R, A, B, C, D](prefix, () => middle, suffix)
+    lazy val middlez = middle
+    new Deep[R, A, B, C, D](prefix, () => middlez, suffix)
   }
 
   def prepend[R[_, _], A, B, C](a: R[A, B], tree: TFingerTree[R, B, C]): TFingerTree[R, A, C] = {
@@ -154,11 +155,11 @@ object TFingerTree {
       case t: Single[R, A, B] => deep(One(t.a), empty[TNode, B](), One(a))
       case t: Deep[R, A, u, v, B] => t.suffix match {
         case f: Four[R, u1, u2, u3, u4, B] =>
-          val m = t.middle()
+          val middle = t.middle()
           deep(
             t.prefix,
             append[TNode, u, u1, u4](
-              m,
+              middle,
               Node3(f.a1, f.a2, f.a3)
             ),
             Two[R, u4, B, C](f.a4, a)
@@ -168,6 +169,26 @@ object TFingerTree {
           deep(t.prefix, t.middle(), Digit.appendd(t.suffix, One(a)))
 
       }
+    }
+  }
+
+  def appendDeep[R[_, _], A, B, C, D, E](tree: Deep[R, A, B, C, D], a: R[D, E]): TFingerTree[R, A, E] = {
+    type TNode[A, B] = ({ type N[U, V] = Node[R, U, V] })#N[A, B]
+
+    tree.suffix match {
+      case f: Four[R, u1, u2, u3, u4, D] =>
+        val middle = tree.middle()
+        deep(
+          tree.prefix,
+          append[TNode, B, u1, u4](
+            middle,
+            Node3(f.a1, f.a2, f.a3)
+          ),
+          Two[R, u4, D, E](f.a4, a)
+        )
+
+      case _ =>
+        deep(tree.prefix, tree.middle(), Digit.appendd(tree.suffix, One(a)))
     }
   }
 
@@ -246,7 +267,7 @@ object TFingerTree {
       case t11: Single[R, A, B] => prepend(t11.a, t2)
       case t11: Deep[R, A, u, v, B] => t2 match {
         case _:Empty[R, B] => t1
-        case t22: Single[R, B, C] => append(t1, t22.a)
+        case t22: Single[R, B, C] => appendDeep(t11, t22.a)
         case t22: Deep[R, B, w, x, C] => deep(
           t11.prefix,
           app3[({ type N[U, V] = Node[R, U, V] })#N, u, v, w, x](

@@ -84,7 +84,7 @@ object TFree {
 
   case class FM[S[_], X, A](
     head: TFreeView[S, X],
-    tail: () => FMExp[S, X, A]
+    tail: FMExp[S, X, A]
   ) extends TFree[S, A]
 
   def fromView[S[_], A](h: TFreeView[S, A]): TFree[S, A] =
@@ -98,7 +98,7 @@ object TFree {
     free match {
       case f:FM[S, x, A] => f.head match {
         case Pure(x) =>
-          TS.tviewl[FCS, x, A](f.tail()) match {
+          TS.tviewl[FCS, x, A](f.tail) match {
             case _: TViewl.EmptyL[TFingerTree, FCS, x] =>
               Pure(x)
 
@@ -108,7 +108,7 @@ object TFree {
                   case f2: FM[S, x, v] =>
                     FM(
                       f2.head,
-                      () => TS.tappend[FCS, x, v, A](f2.tail(), l.tail())
+                      TS.tappend[FCS, x, v, A](f2.tail, l.tail())
                     )
                 }
               )
@@ -116,7 +116,7 @@ object TFree {
         case Impure(a) =>
           Impure(F.map(a){
             case f2: FM[S, y, x] =>
-              FM(f2.head, () => TS.tappend[FCS, y, x, A](f2.tail(), f.tail()))
+              FM(f2.head, TS.tappend[FCS, y, x, A](f2.tail, f.tail))
           })
       }
     }
@@ -132,11 +132,10 @@ object TFree {
       type FCS[A, B] = ({ type l[X, Y] = FC[S, X, Y] })#l[A, B]
       fa match {
         case free: FM[S, x, A] =>
-          val tail = free.tail()
           FM(
             free.head,
-            () => TS.tappend[FCS, x, A, B](
-              tail,
+            TS.tappend[FCS, x, A, B](
+              free.tail,
               TS.tsingleton[FCS, A, B](f)
             )
           )
