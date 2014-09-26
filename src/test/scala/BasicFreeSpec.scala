@@ -8,7 +8,7 @@ import Scalaz._
 
 class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
-
+/*
   "Scalaz Free" should "left/right bind" in {
     import Free._
 
@@ -58,7 +58,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 
-
+*/
 /*
   "Strict Fixed Free" should "left/right bind" in {
     import strict._
@@ -99,7 +99,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       , 200000,   300000,   500000,   800000
       , 1000000,  2000000,  3000000,  5000000
       , 10000000, 12000000, 15000000, 18000000
-      , 10000000, 20000000, 30000000, 40000000  //, 50000000
+      , 20000000, 30000000, 40000000  //, 50000000
     )
 
 
@@ -110,7 +110,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 */
-/*
+
   "Lazy Fixed Free" should "left/right bind" in {
     import `lazy`._
     import TFree._
@@ -153,14 +153,14 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       , 200000,   300000,   500000,   800000
       , 1000000,  2000000,  3000000,  5000000
       , 10000000, 12000000, 15000000, 18000000
-      //, 18000000  //, 20000000 //, 30000000 //, 40000000 //, 50000000
+      , 20000000, 30000000, 40000000  //, 50000000
     )
 
     testN foreach { n =>
       testTime(s"Lazy Fixed Free - Left Bind  - $n") { lftBind(n).run } should equal (n)
-      testTime(s"Lazy Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      // testTime(s"Lazy Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
     }
 
   }
-*/
+
 }
