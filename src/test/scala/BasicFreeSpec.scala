@@ -45,20 +45,24 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       1000
       , 200000,   300000,   500000,   800000
       , 1000000,  2000000,  3000000,  5000000
-      , 10000000, 12000000, 15000000, 18000000
-      , 20000000, 30000000, 40000000  //, 50000000
+      // , 10000000, 12000000, 15000000, 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
     )
 
 
+    // println("Scalaz Free - Left Bind")
+    // testN foreach { n =>
+    //   testTime2(s"$n") { lftBind(n).run } should equal (n)
+    // }
 
+    println("Scalaz Free - Right Bind")
     testN foreach { n =>
-      // testTime(s"Scalaz Free - Left Bind - $n") { lftBind(n).run } should equal (n)
-      testTime(s"Scalaz Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      testTime2(s"$n") { rgtBind(n).run } should equal (n)
     }
 
   }
-
 */
+
 /*
   "Strict Fixed Free" should "left/right bind" in {
     import strict._
@@ -98,15 +102,21 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       1000
       , 200000,   300000,   500000,   800000
       , 1000000,  2000000,  3000000,  5000000
-      , 10000000, 12000000, 15000000, 18000000
-      , 20000000, 30000000, 40000000  //, 50000000
+      // , 10000000, 12000000, 15000000, 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
     )
 
 
+    // println("Strict Free - Left Bind")
+    // testN foreach { n =>
+    //   testTime2(s"$n") { lftBind(n).run } should equal (n)
+    // }
+
+    println("Strict Free - Right Bind")
     testN foreach { n =>
-      testTime(s"Strict Fixed Free - Left Bind  - $n") { lftBind(n).run } //should equal (n)
-      // testTime(s"Strict Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      testTime2(s"$n") { rgtBind(n).run } should equal (n)
     }
+
 
   }
 */
@@ -152,13 +162,18 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       1000
       , 200000,   300000,   500000,   800000
       , 1000000,  2000000,  3000000,  5000000
-      , 10000000, 12000000, 15000000, 18000000
-      , 20000000, 30000000, 40000000  //, 50000000
+      // , 10000000, 12000000, 15000000, 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
     )
 
+    // println("Lazy Free - Left Bind")
+    // testN foreach { n =>
+    //   testTime2(s"$n") { lftBind(n).run } should equal (n)
+    // }
+
+    println("Lazy Free - Right Bind")
     testN foreach { n =>
-      testTime(s"Lazy Fixed Free - Left Bind  - $n") { lftBind(n).run } should equal (n)
-      // testTime(s"Lazy Fixed Free - Right Bind - $n") { rgtBind(n).run } should equal (n)
+      testTime2(s"$n") { rgtBind(n).run } should equal (n)
     }
 
   }

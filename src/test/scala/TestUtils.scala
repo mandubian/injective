@@ -8,6 +8,14 @@ trait Instrumented {
     r
   }
 
+  def testTime2[A](name: String)(body: => A): A = {
+    val t1 = System.currentTimeMillis()
+    val r = body
+    val t2 = System.currentTimeMillis()
+    println( name + " " + formatSeconds( (t2 - t1) * 0.001 ) )
+    r
+  }
+
   def formatSeconds( seconds: Double ) : String = {
     val millisR    = (seconds * 1000).toInt
     val sb         = new StringBuilder( 10 )
