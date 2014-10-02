@@ -24,8 +24,8 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
   import ADT._
   import Interpreters._
 
-/*
-  "ShapeApp" should "run 3rd app 1" in {
+
+  "ShapeApp" should "Scalaz Free" in {
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -54,9 +54,9 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     val testN = Seq[Int](
-      1000, 5000
-      , 10000, 20000, 50000
-      , 100000
+      1000 
+      // , 10000, 20000, 50000
+      , 50000000
     )
 
     println("Scalaz Free App")
@@ -66,7 +66,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 
-*/
+
   "ShapeApp" should "Strict TFree" in {
     import strict._
     import TFree._
@@ -100,10 +100,10 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     val testN = Seq[Int](
-      // 1000, 5000
+      1000
+      , 50000000
       // , 10000, 20000, 50000
       // , 100000
-      100000000
     )
 
     println("Strict Fixed Free App")
@@ -112,6 +112,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     }
 
   }
+
 
 
 "ShapeApp" should "Lazy TFree" in {
@@ -147,9 +148,9 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
     }
 
     val testN = Seq[Int](
-      // 1000, 5000
+      1000
       // , 10000, 20000, 50000
-      100000000
+      ,50000000
     )
 
     println("Lazy Fixed Free App")

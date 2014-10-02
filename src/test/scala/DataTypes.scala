@@ -106,11 +106,11 @@ object Interpreters {
   // }
 
   def fileInterpreter(n: Int) = new (FileSystem ~> Free.Trampoline) {
-    val l = Seq.fill(n)("tata")
-    var i = 0
+    // val l = Seq.fill(n)("tata")
+    private var i = 0
     def apply[A](fs: FileSystem[A]) = fs match {
       case ReadLine =>
-        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+        if(i < n) { val r = Some("tata" + "_" + i); i+=1; Trampoline.done(r) }
         else Trampoline.done(None)
       case PutLine(line) =>
         //Trampoline.done(println(line))
@@ -145,6 +145,21 @@ object Interpreters {
         `lazy`.TFree.Trampoline.done { println(i + " " + line); i }
       case Eof =>
         `lazy`.TFree.Trampoline.done(())
+    }
+  }
+
+  def realFileInterpreter(n: Int) = new (FileSystem ~> Free.Trampoline) {
+    val l = Seq.fill(n)("tata")
+    var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < l.size) { val r = Some(l(i) + "_" + i); i+=1; Trampoline.done(r) }
+        else Trampoline.done(None)
+      case PutLine(line) =>
+        //Trampoline.done(println(line))
+        Trampoline.done { println(i + " " + line); i }
+      case Eof =>
+        Trampoline.done(())
     }
   }
 
