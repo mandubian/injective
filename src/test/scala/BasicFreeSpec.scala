@@ -120,7 +120,7 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 */
-
+/*
   "Lazy Fixed Free" should "left/right bind" in {
     import `lazy`._
     import TFree._
@@ -176,6 +176,99 @@ class BasicFreeSpec extends FlatSpec with Matchers with Instrumented {
       testTime2(s"$n") { rgtBind(n).run } should equal (n)
     }
 
+  }
+*/
+
+  "Scalaz Free" should "even/odd bind" in {
+    import Free._
+
+    def even[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => Trampoline.done(true)
+      case x :: xs => Trampoline.suspend(odd(xs))
+    }
+
+    def odd[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => Trampoline.done(false)
+      case x :: xs => Trampoline.suspend(even(xs))
+    }
+
+    val testN = Seq[Int](
+      1000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000
+      // , 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
+    )
+
+    testN foreach { n =>
+      val l = List.fill(n)(0)
+      testTime(s"Scalaz Free - Even  - $n") { even(l).run } should equal (true)
+      testTime(s"Scalaz Free - Odd   - $n") { even(0 +: l).run } should equal (false)
+    }
+  }
+
+
+  "Strict Fixed Free" should "even/odd bind" in {
+    import strict._
+    import TFree._
+    import Trampoline._
+
+    def even[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => done(true)
+      case x :: xs => suspend(odd(xs))
+    }
+
+    def odd[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => done(false)
+      case x :: xs => suspend(even(xs))
+    }
+
+    val testN = Seq[Int](
+      1000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000
+      // , 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
+    )
+
+    testN foreach { n =>
+      val l = List.fill(n)(0)
+      testTime(s"Strict Fixed Free - Even  - $n") { even(l).run } should equal (true)
+      testTime(s"Strict Fixed Free - Odd   - $n") { even(0 +: l).run } should equal (false)
+    }
+  }
+
+  "Lazy Fixed Free" should "even/odd bind" in {
+    import `lazy`._
+    import TFree._
+    import Trampoline._
+
+    def even[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => done(true)
+      case x :: xs => suspend(odd(xs))
+    }
+
+    def odd[A](ns: List[A]): Trampoline[Boolean] = ns match {
+      case Nil => done(false)
+      case x :: xs => suspend(even(xs))
+    }
+
+    val testN = Seq[Int](
+      1000
+      , 200000,   300000,   500000,   800000
+      , 1000000,  2000000,  3000000,  5000000
+      , 10000000, 12000000, 15000000
+      // , 18000000
+      // , 20000000, 30000000, 40000000  //, 50000000
+    )
+
+    testN foreach { n =>
+      val l = List.fill(n)(0)
+      testTime(s"Lazy Scalaz Free - Even  - $n") { even(l).run } should equal (true)
+      testTime(s"Lazy Scalaz Free - Odd   - $n") { even(0 +: l).run } should equal (false)
+    }
   }
 
 }
