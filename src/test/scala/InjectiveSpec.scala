@@ -5,7 +5,6 @@
   */
 import org.scalatest._
 
-import scalaz.{Free, Coyoneda}
 
 import scala.concurrent._
 
@@ -18,14 +17,63 @@ import scala.concurrent._
 
 class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
   import shapeless._
-  import poly._
+  //import poly._
   import ops.coproduct.{Inject, Selector}
   import Shapoyo._
   import ADT._
   import Interpreters._
 
 
+  "ShapeApp" should "Scala Basic Free" in {
+    import basic._
+    import Free._
+    import Trampoline._
+    import scalaz.{Coyoneda, ~>}
+
+    // APP DEFINITION
+    type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
+    type CoyoApp[A] = Coyoneda[App, A]
+    type FreeApp[A] = Free.FreeC[App, A]
+
+    // THE PROGRAM
+    def prg: FreeApp[Unit] =
+      basic.Free.Copoyo[App](ReadLine) flatMap {
+        case Some(line) => prg
+        case None       => basic.Free.Copoyo[App](Eof)
+      }
+
+/*    def prg: FreeApp[Unit] =
+      for {
+        line <- Copoyo[App](ReadLine)
+        _    <- Copoyo[App](Log(InfoLevel, "read "+line))
+        _    <- line match {
+                  case Some(line) => Copoyo[App](PutLine(line)) flatMap ( _ => prg )
+                  case None       => Copoyo[App](Eof)
+                }
+      } yield ()*/
+
+    def buildInterpreter(n: Int): CoyoApp ~> Free.Trampoline = {
+      val interpreters: App ~> Free.Trampoline = fileInterpreterBasic(n) ||: LoggerBasic
+      liftCoyoLeft(interpreters)
+    }
+
+    val testN = Seq[Int](
+      1000 
+      // , 10000, 20000, 50000
+      , 50000000
+    )
+
+    println("Basic Free App")
+    testN foreach { n =>
+      testTime2(s"$n") { prg.foldMap(buildInterpreter(n)).run }
+    }
+
+  }
+
+
   "ShapeApp" should "Scalaz Free" in {
+    import scalaz.{Free, Coyoneda, ~>}
+
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -66,10 +114,12 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 
-
+/*
   "ShapeApp" should "Strict TFree" in {
     import strict._
     import TFree._
+    import scalaz.{Coyoneda, ~>}
+
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -118,6 +168,8 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 "ShapeApp" should "Lazy TFree" in {
     import `lazy`._
     import TFree._
+    import scalaz.{Coyoneda, ~>}
+
     // APP DEFINITION
     type App[A] = FileSystem[A] :+: LogA[A] :+: CNil
     type CoyoApp[A] = Coyoneda[App, A]
@@ -160,7 +212,7 @@ class InjectiveSpec extends FlatSpec with Matchers with Instrumented {
 
   }
 
-
+*/
 
 
 

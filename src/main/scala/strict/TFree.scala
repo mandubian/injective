@@ -190,6 +190,9 @@ trait TCopoyo {
     def apply[C[_] <: Coproduct] = new TCopoyo[C]
   }
 
+  implicit def TInject[F[_], A, C[_] <: Coproduct](f: F[A])(
+    implicit inj: Inject[C[A], F[A]]
+  ): TFree.TFreeC[C, A] = liftFC(Coproduct[C[A]](f))
 }
 
 

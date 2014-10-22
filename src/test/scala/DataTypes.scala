@@ -47,7 +47,7 @@ object ADT {
 object Interpreters {
   import ADT._
   import shapeless._
-  import poly._
+  import scalaz.~>
 
   // THE INTERPRETERS
   object Console extends (Interact ~> Id) {
@@ -113,10 +113,23 @@ object Interpreters {
         if(i < n) { val r = Some("tata" + "_" + i); i+=1; Trampoline.done(r) }
         else Trampoline.done(None)
       case PutLine(line) =>
-        //Trampoline.done(println(line))
         Trampoline.done { println(i + " " + line); i }
       case Eof =>
         Trampoline.done(())
+    }
+  }
+
+  def fileInterpreterBasic(n: Int) = new (FileSystem ~> basic.Free.Trampoline) {
+    // val l = Seq.fill(n)("tata")
+    private var i = 0
+    def apply[A](fs: FileSystem[A]) = fs match {
+      case ReadLine =>
+        if(i < n) { val r = Some("tata" + "_" + i); i+=1; basic.Trampoline.done(r) }
+        else basic.Trampoline.done(None)
+      case PutLine(line) =>
+        basic.Trampoline.done { println(i + " " + line); i }
+      case Eof =>
+        basic.Trampoline.done(())
     }
   }
 
@@ -167,6 +180,14 @@ object Interpreters {
     def apply[A](a: LogA[A]) = a match {
       case Log(lvl, msg) =>
         println(s"$lvl $msg")
+    }
+  }
+
+  object LoggerBasic extends (LogA ~> basic.Free.Trampoline) {
+    def apply[A](a: LogA[A]) = a match {
+      case Log(lvl, msg) =>
+        //Trampoline.done(println(s"$lvl $msg"))
+        basic.Trampoline.done(())
     }
   }
 
