@@ -83,7 +83,7 @@ object App {
       uid <- ask("What's your user ID?")
       pwd <- ask("Password, please.")
       u   <- login(uid, pwd)
-      b   <- u.map(hasPermission(_, KnowSecret)).getOrElse(Free.Return[CoyoF, Boolean](false))
+      b   <- u.map(hasPermission(_, KnowSecret)).getOrElse(Free.point[CoyoF, Boolean](false))
       _   <- if (b) tell("UUDDLRLRBA") else tell("Go away!")
     } yield ()
   }
