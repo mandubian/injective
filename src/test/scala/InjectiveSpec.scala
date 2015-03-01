@@ -83,7 +83,7 @@ class ShapelessSpec extends FlatSpec with Matchers {
         uid <- ask("What's your user ID?")
         pwd <- ask("Password, please.")
         u   <- login(uid, pwd)
-        b   <- u map (hasPermission(_, KnowSecret)) getOrElse (Free.Return[CoyoApp, Boolean](false))
+        b   <- u map (hasPermission(_, KnowSecret)) getOrElse (Free.point[CoyoApp, Boolean](false))
         _   <- if (b) tell("UUDDLRLRBA") else tell("Go away!")
       } yield ()
     }

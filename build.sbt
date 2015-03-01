@@ -6,7 +6,7 @@ version := "1.0-SNAPSHOT"
 
 libraryDependencies ++= Seq(
   "com.chuusai"     %% "shapeless"        % "2.0.0",
-  "org.scalaz"      %% "scalaz-core"      % "7.1.0-M7",
+  "org.scalaz"      %% "scalaz-core"      % "7.1.1",
   "org.scalatest"   %  "scalatest_2.11"   % "2.1.3"             % "test"
 )
 
